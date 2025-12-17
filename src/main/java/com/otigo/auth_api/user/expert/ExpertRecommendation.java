@@ -1,7 +1,11 @@
-package com.otigo.auth_api.user;
+package com.otigo.auth_api.user.expert;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+
+import com.otigo.auth_api.user.Child;
+import com.otigo.auth_api.user.Game;
+import com.otigo.auth_api.user.UserEntity;
 
 @Entity
 @Table(name = "expert_recommendations")
@@ -44,9 +48,9 @@ public class ExpertRecommendation {
     private LocalDateTime createdAt;
 
      // ✅ EKLEDİĞİMİZ ALAN
-    @Column(nullable = false)
+    /*@Column(nullable = false)
     private LocalDateTime recommendationDate;
-
+   */
 
     public ExpertRecommendation() {}
 
@@ -75,12 +79,16 @@ public class ExpertRecommendation {
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 
-    public LocalDateTime getRecommendationDate() {
+    /*public LocalDateTime getRecommendationDate() {
        return recommendationDate;
-    }
+    }*/
 
-    public void setRecommendationDate(LocalDateTime recommendationDate) {
+    /*public void setRecommendationDate(LocalDateTime recommendationDate) {
        this.recommendationDate = recommendationDate;
+    }*/
+   @PrePersist
+    protected void onCreate() {
+        this.createdAt = LocalDateTime.now();
     }
 
 }

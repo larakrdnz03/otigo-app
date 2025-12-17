@@ -1,7 +1,10 @@
-package com.otigo.auth_api.user;
+package com.otigo.auth_api.user.expert;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
+
+import com.otigo.auth_api.user.Child;
+import com.otigo.auth_api.user.UserEntity;
 
 import java.util.List;
 
@@ -24,7 +27,7 @@ public interface ExpertRecommendationRepository extends JpaRepository<ExpertReco
      * Bir uzmanın yaptığı tüm önerileri/yorumları listeler (gerekirse).
      */
     
-    List<ExpertRecommendation> findByExpertOrderByRecommendationDateDesc(UserEntity expert);
+    List<ExpertRecommendation> findByExpertOrderByCreatedAtDesc(UserEntity expert);
 
     
 }

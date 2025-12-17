@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import com.otigo.auth_api.user.expert.ExpertRecommendation;
+
 @Entity
 @Table(name = "games")
 public class   Game {
@@ -22,7 +24,7 @@ public class   Game {
     @JoinColumn(name = "child_id", nullable = false)
     private Child child;
 
-    @OneToMany
+    @OneToMany(mappedBy="game", fetch = FetchType.LAZY)
     private List<ExpertRecommendation> recommendations ; 
 
     private LocalDateTime lastPlayedAt;

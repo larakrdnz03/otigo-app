@@ -1,4 +1,4 @@
-package com.otigo.auth_api.user;
+package com.otigo.auth_api.user.expert;
 
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -11,6 +11,16 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import com.otigo.auth_api.user.Child;
+import com.otigo.auth_api.user.CreateObservationRequest;
+import com.otigo.auth_api.user.CreateRecommendationRequest;
+import com.otigo.auth_api.user.ReportResponse;
+import com.otigo.auth_api.user.ReportService;
+import com.otigo.auth_api.user.UserEntity;
+import com.otigo.auth_api.user.UserRepository;
+
+import io.micrometer.observation.Observation;
 
 import java.util.List;
 import java.util.Set;
@@ -65,7 +75,7 @@ public class ExpertController {
             @Valid @RequestBody CreateObservationRequest request) {
         try {
             UserEntity expertUser = (UserEntity) authentication.getPrincipal();
-            Observation newObservation = expertService.addObservation(expertUser, childId, request);
+            Observation newObservation = (Observation) expertService.addObservation(expertUser, childId, request);
             return ResponseEntity.status(HttpStatus.CREATED).body(newObservation);
         } catch (AccessDeniedException e) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
@@ -79,7 +89,7 @@ public class ExpertController {
             Authentication authentication,
             @PathVariable Long childId) {
         try {
-            List<Observation> observations = expertService.getObservationsForChild(childId);
+            List<com.otigo.auth_api.user.Observation> observations = expertService.getObservationsForChild(childId);
             return ResponseEntity.ok(observations);
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage());

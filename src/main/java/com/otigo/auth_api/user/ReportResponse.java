@@ -3,6 +3,8 @@ package com.otigo.auth_api.user; // veya com.otigo.auth_api.report
 import java.util.List;
 import java.util.Map;
 
+import com.otigo.auth_api.user.expert.ExpertRecommendation;
+
 /**
  * Bu bir DTO'dur. "Gelişim Raporu" için backend'de analiz ettiğimiz
  * tüm verileri (Oyun Sonuçları Analizi, Anket Listesi, Uzman Yorumları)

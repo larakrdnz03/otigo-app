@@ -4,6 +4,9 @@ import com.lowagie.text.*; // PDF kütüphanesi
 import com.lowagie.text.pdf.PdfPCell;
 import com.lowagie.text.pdf.PdfPTable;
 import com.lowagie.text.pdf.PdfWriter;
+import com.otigo.auth_api.user.expert.ExpertRecommendation;
+import com.otigo.auth_api.user.expert.ExpertRecommendationRepository;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

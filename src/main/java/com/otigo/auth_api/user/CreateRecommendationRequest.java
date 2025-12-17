@@ -14,6 +14,18 @@ public class CreateRecommendationRequest {
     @NotEmpty(message = "Öneri/yorum metni boş olamaz")
     private String recommendationText;
 
+    // --- YENİ EKLENEN ALANLAR ---
+    
+    // Hangi oyun oynanacak? (Boş olabilir, sadece sözel tavsiye ise null gelir)
+    private Long gameId;
+
+    // Hedef seviye kaç? (Boş olabilir)
+    private Integer targetLevel;
+
+    // --- CONSTRUCTOR (Boş) ---
+    public CreateRecommendationRequest() {
+    }
+
     // --- Getter ve Setter ---
 
     public String getRecommendationText() {
@@ -22,5 +34,23 @@ public class CreateRecommendationRequest {
 
     public void setRecommendationText(String recommendationText) {
         this.recommendationText = recommendationText;
+    }
+
+    // Yeni Getter/Setter'lar (Hata veren yerler buraları arıyor):
+    
+    public Long getGameId() {
+        return gameId;
+    }
+
+    public void setGameId(Long gameId) {
+        this.gameId = gameId;
+    }
+
+    public Integer getTargetLevel() {
+        return targetLevel;
+    }
+
+    public void setTargetLevel(Integer targetLevel) {
+        this.targetLevel = targetLevel;
     }
 }

@@ -3,6 +3,10 @@ package com.otigo.auth_api.user; // Paketin neresiyse
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import com.otigo.auth_api.user.expert.ExpertRecommendation;
+import com.otigo.auth_api.user.expert.ExpertRecommendationRepository;
+
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 

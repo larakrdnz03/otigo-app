@@ -5,6 +5,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
@@ -26,6 +27,23 @@ public class UserEntity implements UserDetails {
     @Enumerated(EnumType.STRING)
     private AccountStatus status;
 
+    // --- 👇 EKLENMESİ GEREKEN İLİŞKİLER (mappedBy) 👇 ---
+
+    // 1. Kullanıcının GÖNDERDİĞİ mesajlar
+    // Message sınıfındaki "sender" değişkenine bakar.
+    @OneToMany(mappedBy = "sender", fetch = FetchType.LAZY)
+    private List<Message> sentMessages = new ArrayList<>();
+
+    // 2. Kullanıcıya GELEN mesajlar
+    // Message sınıfındaki "receiver" değişkenine bakar.
+    @OneToMany(mappedBy = "receiver", fetch = FetchType.LAZY)
+    private List<Message> receivedMessages = new ArrayList<>();
+
+    // 3. Kullanıcının DOLDURDUĞU anketler
+    // SymptomSurvey sınıfındaki "filledBy" değişkenine bakar.
+    @OneToMany(mappedBy = "filledBy", fetch = FetchType.LAZY)
+    private List<SymptomSurvey> filledSurveys = new ArrayList<>();
+
     public UserEntity() {
     }
 
@@ -44,6 +62,15 @@ public class UserEntity implements UserDetails {
     public void setRole(UserRole role) { this.role = role; }
     public AccountStatus getStatus() { return status; }
     public void setStatus(AccountStatus status) { this.status = status; }
+
+    public List<Message> getSentMessages() { return sentMessages; }
+    public void setSentMessages(List<Message> sentMessages) { this.sentMessages = sentMessages; }
+
+    public List<Message> getReceivedMessages() { return receivedMessages; }
+    public void setReceivedMessages(List<Message> receivedMessages) { this.receivedMessages = receivedMessages; }
+
+    public List<SymptomSurvey> getFilledSurveys() { return filledSurveys; }
+    public void setFilledSurveys(List<SymptomSurvey> filledSurveys) { this.filledSurveys = filledSurveys; }
 
     // UserDetails Metotları
     @Override

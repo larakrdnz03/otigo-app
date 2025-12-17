@@ -7,7 +7,7 @@ import jakarta.persistence.*;
 @PrimaryKeyJoinColumn(name = "user_id")
 public class Parent extends UserEntity {
     
-    // Veliye özel alanlar buraya gelebilir
+    // Veliye özel alanlar buraya gelir
     public Parent() {
     }
 }
