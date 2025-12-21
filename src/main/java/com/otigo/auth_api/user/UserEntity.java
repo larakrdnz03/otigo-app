@@ -23,6 +23,7 @@ public class UserEntity implements UserDetails {
     private String email;
     private String password;
     @Enumerated(EnumType.STRING)
+    @Column(name = "role")
     private UserRole role;
     @Enumerated(EnumType.STRING)
     private AccountStatus status;

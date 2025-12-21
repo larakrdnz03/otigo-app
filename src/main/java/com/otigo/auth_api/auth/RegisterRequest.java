@@ -1,6 +1,6 @@
 package com.otigo.auth_api.auth;
 
-import com.otigo.auth_api.user.UserRole;
+//import com.otigo.auth_api.user.UserRole;
 
 public class RegisterRequest {
 
@@ -8,12 +8,13 @@ public class RegisterRequest {
     private String lastname;
     private String email;
     private String password;
-    private UserRole role;
+    //private UserRole role;
+    private String role;
 
     public RegisterRequest() {
     }
 
-    public RegisterRequest(String firstname, String lastname, String email, String password, UserRole role) {
+    public RegisterRequest(String firstname, String lastname, String email, String password, String role) {
         this.firstname = firstname;
         this.lastname = lastname;
         this.email = email;
@@ -33,6 +34,6 @@ public class RegisterRequest {
     public String getPassword() { return password; }
     public void setPassword(String password) { this.password = password; }
 
-    public UserRole getRole() { return role; }
-    public void setRole(UserRole role) { this.role = role; }
+    public String getRole() { return role; }
+    public void setRole(String role) { this.role = role; }
 }
