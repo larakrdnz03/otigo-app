@@ -14,14 +14,18 @@ public class ActivityService {
 
     @Autowired
     private final ActivityRepository activityRepository;
-    private final ActivityResultRepository activityResultRepository; // Sonuçları kaydetmek için lazım
+    //private final ActivityResultRepository activityResultRepository; // Sonuçları kaydetmek için lazım
 
     // Constructor Injection (En sağlıklı yöntem)
-    public ActivityService(ActivityRepository activityRepository, 
+    /*public ActivityService(ActivityRepository activityRepository, 
                            ActivityResultRepository activityResultRepository) {
         this.activityRepository = activityRepository;
         this.activityResultRepository = activityResultRepository;
-    }
+    }*/
+
+    public ActivityService(ActivityRepository activityRepository) {
+        this.activityRepository = activityRepository;
+    }    
 
 
     // oyunlar
@@ -81,7 +85,7 @@ public class ActivityService {
         return activityRepository.findByChildIdAndType(childId, ActivityType.ETKINLIK);
     }
 
-    @Transactional
+    /*@Transactional
     public void saveActivityResult(Long childId, CreateActivityResultRequest request) {
         
         // 1. Aktiviteyi bul (ID ile)
@@ -113,7 +117,7 @@ public class ActivityService {
         // 5. Aktivitenin "Son Oynanma Tarihi"ni güncelle
         activity.setLastPlayedAt(LocalDateTime.now());
         activityRepository.save(activity);
-    }
+    }*/
 
     // Çocuk oyunu bitirince bu metodu çağır
     public void updateLastPlayedTime(Long activityId) {
