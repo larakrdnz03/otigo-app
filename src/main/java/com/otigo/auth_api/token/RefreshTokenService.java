@@ -1,8 +1,9 @@
 package com.otigo.auth_api.token;
 
-import com.otigo.auth_api.user.UserEntity;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+
+import com.otigo.auth_api.entity.UserEntity;
 
 import java.time.Instant;
 import java.util.Optional;

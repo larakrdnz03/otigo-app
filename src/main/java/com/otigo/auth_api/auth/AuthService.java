@@ -1,10 +1,27 @@
 package com.otigo.auth_api.auth;
 
 import com.otigo.auth_api.config.JwtService;
+import com.otigo.auth_api.entity.Child;
+import com.otigo.auth_api.entity.Expert;
+import com.otigo.auth_api.entity.Parent;
+import com.otigo.auth_api.entity.UserEntity;
+import com.otigo.auth_api.entity.enums.AccountStatus;
+import com.otigo.auth_api.entity.enums.UserRole;
+import com.otigo.auth_api.repository.ChildRepository;
+import com.otigo.auth_api.repository.UserRepository;
+import com.otigo.auth_api.service.ActivityService;
 import com.otigo.auth_api.token.VerificationToken;
 import com.otigo.auth_api.token.VerificationTokenRepository;
-import com.otigo.auth_api.user.*; // Child, User, GameService, Repository'ler buradan gelir
-import com.otigo.auth_api.user.expert.Expert;
+//import com.otigo.auth_api.user.*; 
+//import com.otigo.auth_api.controller.*;
+//import com.otigo.auth_api.entity.*;
+//import com.otigo.auth_api.entity.enums.*;
+//import com.otigo.auth_api.dto.request.*;
+//import com.otigo.auth_api.dto.response.*;
+//import com.otigo.auth_api.repository.*;
+//import com.otigo.auth_api.service.*;
+//import com.otigo.auth_api.controller.*;
+// Child, User, GameService, Repository'ler buradan gelir
 
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;

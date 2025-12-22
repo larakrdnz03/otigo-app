@@ -1,6 +1,5 @@
 package com.otigo.auth_api.token;
 
-import com.otigo.auth_api.user.UserEntity;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
@@ -9,6 +8,8 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToOne;
 import java.time.LocalDateTime;
+
+import com.otigo.auth_api.entity.UserEntity;
 
 @Entity
 public class VerificationToken {

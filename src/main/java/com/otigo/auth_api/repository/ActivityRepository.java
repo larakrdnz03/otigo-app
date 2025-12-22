@@ -1,0 +1,22 @@
+package com.otigo.auth_api.repository; // Paketin neresiyse orayı yaz
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import com.otigo.auth_api.entity.Activity;
+import com.otigo.auth_api.entity.enums.ActivityType;
+
+import java.util.List;
+import java.util.Optional;
+
+@Repository
+public interface ActivityRepository extends JpaRepository<Activity, Long> {
+    
+    // Belirli bir çocuğa ait aktivitileri getir
+    List<Activity> findByChildId(Long childId);
+
+    // Belirli bir çocuğun, belirli bir oyununu bul (Örn: Çocuğun 'Puzzle' kaydı)
+    List<Activity> findByChildIdAndType(Long childId, ActivityType type);
+
+    Optional<Activity> findByChildIdAndName(Long childId, String name);
+}

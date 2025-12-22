@@ -1,8 +1,10 @@
 package com.otigo.auth_api.token;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+
+import com.otigo.auth_api.entity.UserEntity;
+
 import java.util.Optional;
-import com.otigo.auth_api.user.UserEntity;
 
 public interface VerificationTokenRepository extends JpaRepository<VerificationToken, Long> {
 

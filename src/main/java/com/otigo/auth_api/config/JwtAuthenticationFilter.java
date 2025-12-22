@@ -1,7 +1,8 @@
 package com.otigo.auth_api.config;
 
-import com.otigo.auth_api.user.UserEntity; // Kendi User varlığımız
-import com.otigo.auth_api.user.UserRepository; // SARI UYARIYI VEREN ALAN (ŞİMDİ KULLANILACAK)
+import com.otigo.auth_api.entity.UserEntity;
+import com.otigo.auth_api.repository.UserRepository;
+
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;

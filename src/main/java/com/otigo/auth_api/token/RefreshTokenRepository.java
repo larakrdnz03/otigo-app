@@ -2,7 +2,7 @@ package com.otigo.auth_api.token;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import com.otigo.auth_api.user.UserEntity;
+import com.otigo.auth_api.entity.UserEntity;
 
 import java.util.Optional;
 
