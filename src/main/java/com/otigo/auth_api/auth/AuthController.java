@@ -25,7 +25,18 @@ public class AuthController {
     public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest request) {
         return ResponseEntity.ok(authService.login(request));
     }
-    
+
+    @PostMapping("/resend-code")
+    public ResponseEntity<?> resendCode(@RequestBody ResendCodeRequest request) {
+        try {
+            authService.resendVerificationCode(request.getEmail());
+            return ResponseEntity.ok("Doğrulama kodu tekrar gönderildi.");
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+
     // Refresh Token, Forgot Password gibi metotları şimdilik kaldırdık
     // çünkü test için sadece register lazım.
 }

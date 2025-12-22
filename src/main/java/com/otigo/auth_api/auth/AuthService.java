@@ -1,6 +1,8 @@
 package com.otigo.auth_api.auth;
 
 import com.otigo.auth_api.config.JwtService;
+import com.otigo.auth_api.token.VerificationToken;
+import com.otigo.auth_api.token.VerificationTokenRepository;
 import com.otigo.auth_api.user.*; // Child, User, GameService, Repository'ler buradan gelir
 import com.otigo.auth_api.user.expert.Expert;
 
@@ -11,6 +13,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime; // Tarih işlemleri için
 import java.util.Random;
 
 @Service
@@ -22,6 +25,7 @@ public class AuthService {
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
     private final JavaMailSender mailSender;
+    private final VerificationTokenRepository tokenRepository; //token için ekledim
     
     // --- YENİ EKLENEN SERVİS ---
     private final ActivityService gameService; 
@@ -33,7 +37,8 @@ public class AuthService {
                        JwtService jwtService,
                        AuthenticationManager authenticationManager,
                        JavaMailSender mailSender,
-                       ActivityService gameService) {
+                       ActivityService gameService, 
+                       VerificationTokenRepository tokenRepository) {
         this.userRepository = userRepository;
         this.childRepository = childRepository;
         this.passwordEncoder = passwordEncoder;
@@ -41,6 +46,7 @@ public class AuthService {
         this.authenticationManager = authenticationManager;
         this.mailSender = mailSender;
         this.gameService = gameService;
+        this.tokenRepository = tokenRepository;
     }
 
     /**
@@ -51,8 +57,10 @@ public class AuthService {
 
         String incomingRole = request.getRole().toUpperCase();
         
-        UserEntity userToSave; // Ortak atayı tutacak referans
+        UserEntity userToSave = null; // Ortak atayı tutacak referans
+       //userRepository.save(userToSave);  //kullanıcıyı kaydettik
 
+        
         // 2. Role göre doğru nesneyi oluştur (Factory Mantığı)
         if (incomingRole.equals("VELI")) {
             Parent parent = new Parent();
@@ -93,8 +101,10 @@ public class AuthService {
         String verificationCode = generateVerificationCode(); 
         //sendVerificationEmail(user, verificationCode);
         sendVerificationEmail(userToSave, verificationCode);
+        // a) Token'ı veritabanına kaydet
+        saveUserVerificationToken(userToSave, verificationCode);
 
-        var jwtToken = jwtService.generateToken(user);
+        var jwtToken = jwtService.generateToken(userToSave);
         return new LoginResponse(jwtToken, "dummy-refresh-token");
     }
 
@@ -114,6 +124,30 @@ public class AuthService {
         System.out.println("✅ Çocuk kaydedildi ve oyunları oluşturuldu: " + savedChild.getName());
     }
 
+    /**
+     * [YENİ METOT] KODU TEKRAR GÖNDER
+     * Kullanıcı "Kodu Tekrar Gönder" butonuna bastığında burası çalışır.
+     */
+    public void resendVerificationCode(String email) {
+        // Kullanıcıyı bul
+        var user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı"));
+
+        // Zaten onaylıysa işlem yapma
+        if (user.getStatus() == AccountStatus.ACTIVE) {
+            throw new RuntimeException("Hesap zaten doğrulanmış.");
+        }
+
+        // Yeni kod üret
+        String newCode = generateVerificationCode();
+        
+        // Token tablosunu güncelle (Eskisi varsa günceller, yoksa yeni açar)
+        saveUserVerificationToken(user, newCode);
+        
+        // Mail at
+        sendVerificationEmail(user, newCode);
+    }
+
     public LoginResponse login(LoginRequest request) {
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
@@ -124,6 +158,29 @@ public class AuthService {
         var user = userRepository.findByEmail(request.getEmail()).orElseThrow();
         var jwtToken = jwtService.generateToken(user);
         return new LoginResponse(jwtToken, "dummy-refresh-token");
+    }
+
+    /**
+     * [EKSİK OLAN METOT] 
+     * Bunu dosyanın en altına, diğer metodların dışına yapıştır.
+     */
+    private void saveUserVerificationToken(UserEntity user, String token) {
+        // 1. Kullanıcının eski token'ı var mı kontrol et
+        VerificationToken verificationToken = tokenRepository.findByUser(user)
+                .orElse(new VerificationToken()); // Yoksa yeni (boş) bir tane oluştur
+
+        // 2. Token nesnesinin içini doldur
+        verificationToken.setToken(token);
+        verificationToken.setUser(user);
+        verificationToken.setCreatedAt(java.time.LocalDateTime.now());
+        
+        // Token 15 dakika geçerli olsun
+        verificationToken.setExpiresAt(java.time.LocalDateTime.now().plusMinutes(15)); 
+        
+        verificationToken.setConfirmedAt(null); // Yeni kod olduğu için onaylanmadı sayıyoruz
+
+        // 3. Veritabanına kaydet
+        tokenRepository.save(verificationToken);
     }
 
     // --- YARDIMCI METOTLAR ---
