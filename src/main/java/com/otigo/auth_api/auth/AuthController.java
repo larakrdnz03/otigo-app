@@ -6,6 +6,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.otigo.auth_api.dto.request.VerifyCodeRequest;
+
 @RestController
 @RequestMapping("/api/v1/auth")
 public class AuthController {
@@ -33,6 +35,24 @@ public class AuthController {
             return ResponseEntity.ok("Doğrulama kodu tekrar gönderildi.");
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @PostMapping("/verify")
+    public ResponseEntity<LoginResponse> verify(@RequestBody VerifyCodeRequest request) {
+        return ResponseEntity.ok(authService.verifyUser(request));
+    }
+
+    // Frontend buraya istek atıp "Kod doğru mu?" diye soracak
+    @PostMapping("/check-code")
+    public ResponseEntity<String> checkCode(@RequestBody VerifyCodeRequest request) {
+        // Not: Request içinde sadece email ve code olması yeterli, role null gelebilir.
+        boolean isValid = authService.checkVerificationCode(request.getEmail(), request.getCode());
+        
+        if (isValid) {
+            return ResponseEntity.ok("Kod Doğru");
+        } else {
+            return ResponseEntity.badRequest().body("Kod Yanlış");
         }
     }
 

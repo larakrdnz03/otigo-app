@@ -1,27 +1,21 @@
 package com.otigo.auth_api.auth;
 
 import com.otigo.auth_api.config.JwtService;
+import com.otigo.auth_api.auth.LoginRequest;
+import com.otigo.auth_api.auth.RegisterRequest;
+import com.otigo.auth_api.auth.LoginResponse;
+//import com.otigo.auth_api.dto.request.LoginRequest;
+//import com.otigo.auth_api.dto.request.RegisterRequest;
+import com.otigo.auth_api.dto.request.VerifyCodeRequest;
+//import com.otigo.auth_api.dto.response.LoginResponse;
 import com.otigo.auth_api.entity.Child;
-import com.otigo.auth_api.entity.Expert;
-import com.otigo.auth_api.entity.Parent;
 import com.otigo.auth_api.entity.UserEntity;
 import com.otigo.auth_api.entity.enums.AccountStatus;
-import com.otigo.auth_api.entity.enums.UserRole;
 import com.otigo.auth_api.repository.ChildRepository;
 import com.otigo.auth_api.repository.UserRepository;
 import com.otigo.auth_api.service.ActivityService;
 import com.otigo.auth_api.token.VerificationToken;
 import com.otigo.auth_api.token.VerificationTokenRepository;
-//import com.otigo.auth_api.user.*; 
-//import com.otigo.auth_api.controller.*;
-//import com.otigo.auth_api.entity.*;
-//import com.otigo.auth_api.entity.enums.*;
-//import com.otigo.auth_api.dto.request.*;
-//import com.otigo.auth_api.dto.response.*;
-//import com.otigo.auth_api.repository.*;
-//import com.otigo.auth_api.service.*;
-//import com.otigo.auth_api.controller.*;
-// Child, User, GameService, Repository'ler buradan gelir
 
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -30,31 +24,27 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime; // Tarih işlemleri için
 import java.util.Random;
 
 @Service
 public class AuthService {
 
     private final UserRepository userRepository;
-    private final ChildRepository childRepository; // EKLENDİ: Çocuğu kaydetmek için
+    private final ChildRepository childRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
     private final JavaMailSender mailSender;
-    private final VerificationTokenRepository tokenRepository; //token için ekledim
-    
-    // --- YENİ EKLENEN SERVİS ---
-    private final ActivityService gameService; 
+    private final VerificationTokenRepository tokenRepository;
+    private final ActivityService gameService;
 
-    // Constructor Güncellendi (GameService ve ChildRepository eklendi)
     public AuthService(UserRepository userRepository,
                        ChildRepository childRepository,
                        PasswordEncoder passwordEncoder,
                        JwtService jwtService,
                        AuthenticationManager authenticationManager,
                        JavaMailSender mailSender,
-                       ActivityService gameService, 
+                       ActivityService gameService,
                        VerificationTokenRepository tokenRepository) {
         this.userRepository = userRepository;
         this.childRepository = childRepository;
@@ -67,103 +57,92 @@ public class AuthService {
     }
 
     /**
-     * BU METOT: Veli veya Uzman kaydeder (User Tablosu).
-     * Burada oyun oluşturulmaz, çünkü oyunlar çocuklar içindir.
+     * 1. ADIM: KAYIT OL (ROL YOK)
+     * Kullanıcı sadece İsim, Soyisim, Email, Şifre girer.
+     * Rol bilgisi (VELI/UZMAN) burada alınmaz, NULL bırakılır.
      */
     public LoginResponse register(RegisterRequest request) {
 
-        String incomingRole = request.getRole().toUpperCase();
-        
-        UserEntity userToSave = null; // Ortak atayı tutacak referans
-       //userRepository.save(userToSave);  //kullanıcıyı kaydettik
-
-        
-        // 2. Role göre doğru nesneyi oluştur (Factory Mantığı)
-        if (incomingRole.equals("VELI")) {
-            Parent parent = new Parent();
-            // Parent'a özel alanlar varsa burada set edilebilir
-            // Örn: parent.setCocukSayisi(0); 
-            parent.setRole(UserRole.VELI); // String'i Enum'a çevirmiş olduk
-            userToSave = parent;
-
-        } else if (incomingRole.equals("UZMAN")) {
-            Expert expert = new Expert();
-            // Expert'e özel alanlar varsa burada set edilebilir
-            // Örn: expert.setDiplomaNo("...");
-            expert.setRole(UserRole.UZMAN);
-            userToSave = expert;
-
-        } else {
-            // Güvenlik: Eğer geçersiz bir rol gelirse hata fırlat
-            throw new RuntimeException("Geçersiz rol! Lütfen VELI veya UZMAN seçiniz.");
+        // Email zaten var mı kontrolü
+        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
+            throw new RuntimeException("Bu email adresi zaten kullanılıyor!");
         }
 
+        // Kullanıcıyı oluştur
         UserEntity user = new UserEntity();
-        /*user.setFirstname(request.getFirstname());
+        user.setFirstname(request.getFirstname());
         user.setLastname(request.getLastname());
         user.setEmail(request.getEmail());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
-        //user.setRole(request.getRole());
-        user.setStatus(AccountStatus.PENDING_VERIFICATION);*/
-
-        userToSave.setFirstname(request.getFirstname());
-        userToSave.setLastname(request.getLastname());
-        userToSave.setEmail(request.getEmail());
-        userToSave.setPassword(passwordEncoder.encode(request.getPassword()));
-        userToSave.setStatus(AccountStatus.PENDING_VERIFICATION);
-
-        //userRepository.save(user); // Kullanıcıyı kaydet
-        userRepository.save(userToSave);
-
-        String verificationCode = generateVerificationCode(); 
-        //sendVerificationEmail(user, verificationCode);
-        sendVerificationEmail(userToSave, verificationCode);
-        // a) Token'ı veritabanına kaydet
-        saveUserVerificationToken(userToSave, verificationCode);
-
-        var jwtToken = jwtService.generateToken(userToSave);
-        return new LoginResponse(jwtToken, "dummy-refresh-token");
-    }
-
-    /**
-     * --- [YENİ METOT] ÇOCUK KAYDI BURADA YAPILIR ---
-     * Bu metodu bir Controller'dan (Örn: ParentController) çağıracaksın.
-     * Veli panelinden "Çocuk Ekle" dendiğinde burası çalışacak.
-     */
-    public void registerChild(Child child) {
-        // 1. Çocuğu veritabanına kaydet
-        Child savedChild = childRepository.save(child);
-
-        // 2. --- İŞTE O KRİTİK DOKUNUŞ --- 
-        // Çocuk kaydedildiği an, sistemdeki tüm oyunları Level 1 olarak ona tanımlar.
-        gameService.createInitialActivitiesForChild(savedChild);
         
-        System.out.println("✅ Çocuk kaydedildi ve oyunları oluşturuldu: " + savedChild.getName());
+        // DİKKAT: Rol henüz seçilmediği için null veya varsayılan bir değer atanır.
+        user.setRole(null); 
+        user.setStatus(AccountStatus.PENDING_VERIFICATION); // Henüz doğrulanmadı
+
+        // Kaydet
+        userRepository.save(user);
+
+        // Doğrulama kodu üret ve gönder
+        String verificationCode = generateVerificationCode();
+        saveUserVerificationToken(user, verificationCode);
+        sendVerificationEmail(user, verificationCode);
+
+        // Geçici token dön (Henüz yetkileri kısıtlı olabilir)
+        //var jwtToken = jwtService.generateToken(user);
+        //return new LoginResponse(jwtToken, "dummy-refresh-token");
+        return new LoginResponse("kayit-ok", "kayit-ok");
     }
 
     /**
-     * [YENİ METOT] KODU TEKRAR GÖNDER
-     * Kullanıcı "Kodu Tekrar Gönder" butonuna bastığında burası çalışır.
+     * 2. ADIM: DOĞRULA VE ROL ATA
+     * Kullanıcı maildeki kodu girer VE EKRANDAN ROLÜNÜ SEÇER.
+     * Frontend bize {email, code, role} gönderir.
      */
-    public void resendVerificationCode(String email) {
-        // Kullanıcıyı bul
-        var user = userRepository.findByEmail(email)
+    public LoginResponse verifyUser(VerifyCodeRequest request) {
+        // 1. Kullanıcıyı bul
+        UserEntity user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı"));
 
-        // Zaten onaylıysa işlem yapma
-        if (user.getStatus() == AccountStatus.ACTIVE) {
-            throw new RuntimeException("Hesap zaten doğrulanmış.");
+        // 2. Token verisini çek
+        VerificationToken tokenData = tokenRepository.findByUser(user)
+                .orElseThrow(() -> new RuntimeException("Doğrulama kodu bulunamadı"));
+
+        // 3. Kod doğru mu?
+        if (!tokenData.getToken().equals(request.getCode())) {
+            throw new RuntimeException("Geçersiz doğrulama kodu!");
         }
 
-        // Yeni kod üret
-        String newCode = generateVerificationCode();
+        // 4. Süresi dolmuş mu?
+        if (tokenData.getExpiresAt().isBefore(java.time.LocalDateTime.now())) {
+            throw new RuntimeException("Kodun süresi dolmuş. Lütfen 'Kodu Tekrar Gönder' yapın.");
+        }
+
+        // 5. ROL KONTROLÜ VE ATAMASI (YENİ KISIM)
+        // VerifyCodeRequest içinde 'role' alanı dolu gelmeli!
+        if (request.getRole() == null) {
+            throw new RuntimeException("Lütfen bir kullanıcı rolü (Veli/Uzman) seçin!");
+        }
+
+        // Kullanıcıya frontend'den gelen rolü ata
+        user.setRole(request.getRole());
         
-        // Token tablosunu güncelle (Eskisi varsa günceller, yoksa yeni açar)
-        saveUserVerificationToken(user, newCode);
+        // 6. Hesabı Aktif Et
+        user.setStatus(AccountStatus.ACTIVE);
         
-        // Mail at
-        sendVerificationEmail(user, newCode);
+        // Son halini kaydet
+        userRepository.save(user);
+
+        // 7. Token'ı kullanıldı olarak işaretle
+        tokenData.setConfirmedAt(java.time.LocalDateTime.now());
+        tokenRepository.save(tokenData);
+
+        // 8. Artık ROLÜ olan ve AKTİF bir kullanıcı için Token üret
+        //var jwtToken = jwtService.generateToken(user);
+        //return new LoginResponse(jwtToken, "dummy-refresh-token");
+        return new LoginResponse("kayit-asamasi", "kayit-asamasi");
     }
+
+    // --- DİĞER METOTLAR ---
 
     public LoginResponse login(LoginRequest request) {
         authenticationManager.authenticate(
@@ -177,30 +156,37 @@ public class AuthService {
         return new LoginResponse(jwtToken, "dummy-refresh-token");
     }
 
-    /**
-     * [EKSİK OLAN METOT] 
-     * Bunu dosyanın en altına, diğer metodların dışına yapıştır.
-     */
-    private void saveUserVerificationToken(UserEntity user, String token) {
-        // 1. Kullanıcının eski token'ı var mı kontrol et
-        VerificationToken verificationToken = tokenRepository.findByUser(user)
-                .orElse(new VerificationToken()); // Yoksa yeni (boş) bir tane oluştur
+    public void registerChild(Child child) {
+        Child savedChild = childRepository.save(child);
+        gameService.createInitialActivitiesForChild(savedChild);
+        System.out.println("✅ Çocuk kaydedildi ve oyunları oluşturuldu: " + savedChild.getName());
+    }
 
-        // 2. Token nesnesinin içini doldur
+    public void resendVerificationCode(String email) {
+        var user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı"));
+
+        if (user.getStatus() == AccountStatus.ACTIVE) {
+            throw new RuntimeException("Hesap zaten doğrulanmış.");
+        }
+
+        String newCode = generateVerificationCode();
+        saveUserVerificationToken(user, newCode);
+        sendVerificationEmail(user, newCode);
+    }
+
+    private void saveUserVerificationToken(UserEntity user, String token) {
+        VerificationToken verificationToken = tokenRepository.findByUser(user)
+                .orElse(new VerificationToken());
+
         verificationToken.setToken(token);
         verificationToken.setUser(user);
         verificationToken.setCreatedAt(java.time.LocalDateTime.now());
-        
-        // Token 15 dakika geçerli olsun
-        verificationToken.setExpiresAt(java.time.LocalDateTime.now().plusMinutes(15)); 
-        
-        verificationToken.setConfirmedAt(null); // Yeni kod olduğu için onaylanmadı sayıyoruz
+        verificationToken.setExpiresAt(java.time.LocalDateTime.now().plusMinutes(15));
+        verificationToken.setConfirmedAt(null);
 
-        // 3. Veritabanına kaydet
         tokenRepository.save(verificationToken);
     }
-
-    // --- YARDIMCI METOTLAR ---
 
     private String generateVerificationCode() {
         Random random = new Random();
@@ -213,15 +199,43 @@ public class AuthService {
             SimpleMailMessage email = new SimpleMailMessage();
             email.setTo(user.getEmail());
             email.setSubject("Doğrulama Kodun - Otigo");
-            
             email.setText("Merhaba " + user.getFirstname() + ",\n\n" +
                     "Giriş için doğrulama kodun: " + code + "\n\n" +
                     "Bu kodu kimseyle paylaşma.");
-
             mailSender.send(email);
             System.out.println("✅ DOĞRULAMA KODU GÖNDERİLDİ: " + code);
         } catch (Exception e) {
             System.err.println("❌ MAİL HATASI: " + e.getMessage());
         }
     }
+
+    /**
+     * Sadece kodun doğru olup olmadığını kontrol eder.
+     * Veritabanında kalıcı bir değişiklik yapmaz.
+     * Frontend'de "Rol Seçme Ekranına" geçiş izni vermek için kullanılır.
+     */
+    public boolean checkVerificationCode(String email, String code) {
+        // 1. Kullanıcıyı bul
+        UserEntity user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı"));
+
+        // 2. Token'ı bul
+        VerificationToken tokenData = tokenRepository.findByUser(user)
+                .orElseThrow(() -> new RuntimeException("Doğrulama kodu bulunamadı"));
+
+        // 3. Kod eşleşiyor mu?
+        if (!tokenData.getToken().equals(code)) {
+            throw new RuntimeException("Geçersiz doğrulama kodu!");
+        }
+
+        // 4. Süre dolmuş mu?
+        if (tokenData.getExpiresAt().isBefore(java.time.LocalDateTime.now())) {
+            throw new RuntimeException("Kodun süresi dolmuş.");
+        }
+
+        return true; // Kod doğru!
+    }
+
+
+
 }

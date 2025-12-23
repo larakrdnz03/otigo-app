@@ -9,7 +9,7 @@ public class RegisterRequest {
     private String email;
     private String password;
     //private UserRole role;
-    private String role;
+    //private String role;
 
     public RegisterRequest() {
     }
@@ -19,7 +19,7 @@ public class RegisterRequest {
         this.lastname = lastname;
         this.email = email;
         this.password = password;
-        this.role = role;
+        //this.role = role;
     }
 
     public String getFirstname() { return firstname; }
@@ -34,6 +34,6 @@ public class RegisterRequest {
     public String getPassword() { return password; }
     public void setPassword(String password) { this.password = password; }
 
-    public String getRole() { return role; }
-    public void setRole(String role) { this.role = role; }
+    //public String getRole() { return role; }
+    //public void setRole(String role) { this.role = role; }
 }
