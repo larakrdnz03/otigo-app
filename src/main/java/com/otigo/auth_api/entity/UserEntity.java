@@ -14,7 +14,8 @@ import java.util.List;
 
 @Entity
 @Table(name = "users")
-@Inheritance(strategy = InheritanceType.JOINED) // <-- BU SATIR ÇOK ÖNEMLİ
+//@Inheritance(strategy = InheritanceType.JOINED) // <-- BU SATIR ÇOK ÖNEMLİ
+@Inheritance(strategy = InheritanceType.SINGLE_TABLE)
 public class UserEntity implements UserDetails {
 
     @Id

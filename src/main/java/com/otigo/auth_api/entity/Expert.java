@@ -1,6 +1,8 @@
 package com.otigo.auth_api.entity;
 
 import jakarta.persistence.*;
+import lombok.NoArgsConstructor;
+
 import java.util.HashSet;
 import java.util.ArrayList; // ArrayList importu eklendi
 import java.util.List;
@@ -8,7 +10,9 @@ import java.util.Set;
 
 @Entity
 @Table(name = "experts")
-@PrimaryKeyJoinColumn(name = "user_id")
+//@PrimaryKeyJoinColumn(name = "user_id")
+@DiscriminatorValue("EXPERT")
+@NoArgsConstructor
 public class Expert extends UserEntity {
 
     // --- 1. TAKİP EDİLEN ÇOCUKLAR (İlişkinin Sahibi Burası) ---
@@ -27,8 +31,8 @@ public class Expert extends UserEntity {
     @OneToMany(mappedBy = "expert", fetch = FetchType.LAZY)
     private List<ExpertRecommendation> recommendations = new ArrayList<>();
 
-    public Expert() {
-    }
+    /*public Expert() {
+    }*/
 
     // --- Getter ve Setter ---
 
@@ -47,4 +51,5 @@ public class Expert extends UserEntity {
     public void setRecommendations(List<ExpertRecommendation> recommendations) {
         this.recommendations = recommendations;
     }
+
 }
