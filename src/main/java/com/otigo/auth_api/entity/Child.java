@@ -22,8 +22,8 @@ public class Child {
     private Set<Expert> experts = new HashSet<>(); 
 
     // Çocuğun Velisi (Parent) - İlişkinin Sahibi Burası (FK burada)
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "parent_id")
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "parent_id", nullable = false)
     private UserEntity parent;
 
     // --- LİSTELER (HEPSİNDE mappedBy KULLANILMALI) ---
