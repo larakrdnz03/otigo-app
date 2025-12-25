@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Set;
 
 @Entity
-@Table(name = "experts")
+//@Table(name = "experts")
 //@PrimaryKeyJoinColumn(name = "user_id")
 @DiscriminatorValue("EXPERT")
 @NoArgsConstructor
