@@ -30,7 +30,7 @@ public class ExpertService {
     private final ChildRepository childRepository;
     private final ObservationRepository observationRepository;
     private final ExpertRecommendationRepository recommendationRepository;
-    private final ActivityRepository activityRepository; // GameRepository yerine bu geldi
+    private final ActivityRepository activityRepository;
 
     // Constructor Injection
     public ExpertService(UserRepository userRepository, 
@@ -49,6 +49,8 @@ public class ExpertService {
 
     @Transactional(readOnly = true)
     public Set<Child> getTrackedChildren(UserEntity user) {
+        // Parametre gelen user entity'si bazen proxy olabilir, veritabanından taze çekmek gerekebilir
+        // Ancak genelde Controller'dan gelen user eğer Expert ise cast edilebilir.
         if (user instanceof Expert) {
             return ((Expert) user).getTrackedChildren();
         }
@@ -60,6 +62,7 @@ public class ExpertService {
         Child child = childRepository.findById(childId)
                 .orElseThrow(() -> new RuntimeException("Çocuk bulunamadı. ID: " + childId));
         
+        // Kullanıcıyı veritabanından taze çekiyoruz
         UserEntity freshUser = userRepository.findById(user.getId())
                 .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı"));
 
@@ -72,13 +75,14 @@ public class ExpertService {
         }
     }
     
-    // --- GÖZLEM EKLEME (GÜNCELLENDİ 🛠️) ---
+    // --- GÖZLEM EKLEME ---
     @Transactional
     public Observation addObservation(UserEntity user, Long childId, CreateObservationRequest request) {
         Child child = childRepository.findById(childId)
                 .orElseThrow(() -> new RuntimeException("Çocuk bulunamadı. ID: " + childId));
         
-        UserEntity freshUser = userRepository.findById(user.getId()).get();
+        UserEntity freshUser = userRepository.findById(user.getId())
+                .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı."));
 
         if (freshUser instanceof Expert) {
             Expert expert = (Expert) freshUser;
@@ -91,19 +95,18 @@ public class ExpertService {
             Observation newObservation = new Observation();
             newObservation.setNotes(request.getNotes());
             
-            // --- GÜNCELLENEN KISIM: ID ile Aktivite Bulma ---
+            // Aktivite kontrolü
             if (request.getActivityId() != null) {
                 Activity activity = activityRepository.findById(request.getActivityId())
                         .orElseThrow(() -> new RuntimeException("Seçilen aktivite bulunamadı ID: " + request.getActivityId()));
                 newObservation.setActivity(activity);
             }
-            // activityId null ise boş geçer, setActivity yapmaz.
 
             newObservation.setObservationDate(
                 request.getObservationDate() != null ? request.getObservationDate() : LocalDateTime.now()
             );
             newObservation.setChild(child);
-            newObservation.setExpert(user);
+            newObservation.setExpert(expert); // Cast edilmiş expert nesnesini set ettik
             
             return observationRepository.save(newObservation);
 
@@ -119,14 +122,15 @@ public class ExpertService {
         return observationRepository.findByChildOrderByObservationDateDesc(child);
     }
 
-    // --- UZMAN YORUMU / GÖREVİ EKLEME (GÜNCELLENDİ 🛠️) ---
+    // --- UZMAN YORUMU / GÖREVİ EKLEME ---
     @Transactional
     public ExpertRecommendation addRecommendation(UserEntity user, Long childId, CreateRecommendationRequest request) {
         
         Child child = childRepository.findById(childId)
                 .orElseThrow(() -> new RuntimeException("Çocuk bulunamadı. ID: " + childId));
 
-        UserEntity freshUser = userRepository.findById(user.getId()).get();
+        UserEntity freshUser = userRepository.findById(user.getId())
+                .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı."));
 
         if (freshUser instanceof Expert) {
             Expert expert = (Expert) freshUser;
@@ -135,16 +139,18 @@ public class ExpertService {
                 throw new AccessDeniedException("Takip etmediğiniz bir çocuk için yorum ekleyemezsiniz.");
             }
             
+            // Rol kontrolü (instanceof Expert zaten bunu büyük ölçüde garanti eder ama çift dikiş sağlamdır)
             if (expert.getRole() != UserRole.UZMAN) {
                 throw new AccessDeniedException("Sadece 'UZMAN' rolündeki kullanıcılar yorum ekleyebilir.");
             }
 
-            ExpertRecommendation newRecommendation = new ExpertRecommendation();
+            // Burada Entity'deki boş constructor kullanılır
+            ExpertRecommendation newRecommendation = new ExpertRecommendation(); 
             newRecommendation.setChild(child);
-            newRecommendation.setExpert(user);
+            newRecommendation.setExpert(expert); // Cast edilmiş expert nesnesini set ettik
             newRecommendation.setRecommendationText(request.getRecommendationText());
             
-            // --- ID ile Aktivite Bulma ---
+            // Aktivite kontrolü
             if (request.getActivityId() != null) {
                 Activity activity = activityRepository.findById(request.getActivityId())
                         .orElseThrow(() -> new RuntimeException("Seçilen aktivite bulunamadı ID: " + request.getActivityId()));
@@ -156,7 +162,7 @@ public class ExpertService {
                 }
             }
             
-            newRecommendation.setCreatedAt(LocalDateTime.now()); // Oluşturulma tarihi
+            newRecommendation.setCreatedAt(LocalDateTime.now());
 
             return recommendationRepository.save(newRecommendation);
 
