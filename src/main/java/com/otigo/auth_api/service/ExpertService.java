@@ -4,19 +4,19 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.otigo.auth_api.dto.request.CreateObservationRequest;
+//import com.otigo.auth_api.dto.request.CreateObservationRequest;
 import com.otigo.auth_api.dto.request.CreateRecommendationRequest;
 import com.otigo.auth_api.entity.Activity;
 import com.otigo.auth_api.entity.Child;
 import com.otigo.auth_api.entity.Expert;
 import com.otigo.auth_api.entity.ExpertRecommendation;
-import com.otigo.auth_api.entity.Observation;
+//import com.otigo.auth_api.entity.Observation;
 import com.otigo.auth_api.entity.UserEntity;
 import com.otigo.auth_api.entity.enums.UserRole;
 import com.otigo.auth_api.repository.ActivityRepository;
 import com.otigo.auth_api.repository.ChildRepository;
 import com.otigo.auth_api.repository.ExpertRecommendationRepository;
-import com.otigo.auth_api.repository.ObservationRepository;
+//import com.otigo.auth_api.repository.ObservationRepository;
 import com.otigo.auth_api.repository.UserRepository;
 
 import java.util.Set;
@@ -28,19 +28,19 @@ public class ExpertService {
 
     private final UserRepository userRepository;
     private final ChildRepository childRepository;
-    private final ObservationRepository observationRepository;
+   //private final ObservationRepository observationRepository;
     private final ExpertRecommendationRepository recommendationRepository;
     private final ActivityRepository activityRepository;
 
     // Constructor Injection
     public ExpertService(UserRepository userRepository, 
                          ChildRepository childRepository,
-                         ObservationRepository observationRepository,
+                         //ObservationRepository observationRepository,
                          ExpertRecommendationRepository recommendationRepository,
                          ActivityRepository activityRepository) {
         this.userRepository = userRepository;
         this.childRepository = childRepository;
-        this.observationRepository = observationRepository;
+        //this.observationRepository = observationRepository;
         this.recommendationRepository = recommendationRepository;
         this.activityRepository = activityRepository;
     }
@@ -76,7 +76,7 @@ public class ExpertService {
     }
     
     // --- GÖZLEM EKLEME ---
-    @Transactional
+    /*@Transactional
     public Observation addObservation(UserEntity user, Long childId, CreateObservationRequest request) {
         Child child = childRepository.findById(childId)
                 .orElseThrow(() -> new RuntimeException("Çocuk bulunamadı. ID: " + childId));
@@ -113,14 +113,14 @@ public class ExpertService {
         } else {
              throw new AccessDeniedException("Sadece Uzmanlar gözlem ekleyebilir.");
         }
-    }
+    }*/
 
-    @Transactional(readOnly = true)
+    /*@Transactional(readOnly = true)
     public List<Observation> getObservationsForChild(Long childId) {
         Child child = childRepository.findById(childId)
                 .orElseThrow(() -> new RuntimeException("Çocuk bulunamadı. ID: " + childId));
         return observationRepository.findByChildOrderByObservationDateDesc(child);
-    }
+    }*/
 
     // --- UZMAN YORUMU / GÖREVİ EKLEME ---
     @Transactional

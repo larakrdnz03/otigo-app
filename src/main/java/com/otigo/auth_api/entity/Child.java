@@ -40,9 +40,9 @@ public class Child {
     @OneToMany(mappedBy = "child", fetch = FetchType.LAZY)
     private List<Activity> activities = new ArrayList<>();
 
-    // 4. Uzman Gözlemleri
+    /*  4. Uzman Gözlemleri
     @OneToMany(mappedBy = "child", fetch = FetchType.LAZY)
-    private List<Observation> observations = new ArrayList<>();
+    private List<Observation> observations = new ArrayList<>();*/
 
     // 5. Anketler
     @OneToMany(mappedBy = "child", fetch = FetchType.LAZY)
@@ -78,8 +78,8 @@ public class Child {
     public List<Activity> getActivities() { return activities; }
     public void setActivities(List<Activity> activities) { this.activities = activities; }
 
-    public List<Observation> getObservations() { return observations; }
-    public void setObservations(List<Observation> observations) { this.observations = observations; }
+    //public List<Observation> getObservations() { return observations; }
+    //public void setObservations(List<Observation> observations) { this.observations = observations; }
 
     public List<SymptomSurvey> getSurveys() { return surveys; }
     public void setSurveys(List<SymptomSurvey> surveys) { this.surveys = surveys; }

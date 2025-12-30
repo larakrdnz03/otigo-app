@@ -1,15 +1,14 @@
 package com.otigo.auth_api.auth;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import com.otigo.auth_api.dto.request.VerifyCodeRequest;
 
 @RestController
-@RequestMapping("/api/v1/auth")
+//@RequestMapping("/api/v1/auth")
+@RequestMapping("/auth")
+@CrossOrigin(origins = "*") // Test için *
 public class AuthController {
 
     private final AuthService authService;

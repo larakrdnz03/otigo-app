@@ -12,12 +12,12 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.otigo.auth_api.dto.request.CreateObservationRequest;
+//import com.otigo.auth_api.dto.request.CreateObservationRequest;
 import com.otigo.auth_api.dto.request.CreateRecommendationRequest;
 import com.otigo.auth_api.dto.response.ReportResponse;
 import com.otigo.auth_api.entity.Child;
 import com.otigo.auth_api.entity.ExpertRecommendation;
-import com.otigo.auth_api.entity.Observation;
+//import com.otigo.auth_api.entity.Observation;
 import com.otigo.auth_api.entity.UserEntity;
 import com.otigo.auth_api.repository.UserRepository;
 import com.otigo.auth_api.service.ExpertService;
@@ -69,7 +69,7 @@ public class ExpertController {
         }
     }
 
-    @PostMapping("/observations/{childId}")
+    /*@PostMapping("/observations/{childId}")
     public ResponseEntity<?> addObservation(
             Authentication authentication,
             @PathVariable Long childId,
@@ -83,9 +83,9 @@ public class ExpertController {
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
-    }
+    }*/
 
-    @GetMapping("/observations/{childId}")
+   /* @GetMapping("/observations/{childId}")
     public ResponseEntity<?> getObservationsForChild(
             Authentication authentication,
             @PathVariable Long childId) {
@@ -95,7 +95,7 @@ public class ExpertController {
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
-    }
+    }*/
 
     @PostMapping("/recommendations/{childId}")
     public ResponseEntity<?> addRecommendation(

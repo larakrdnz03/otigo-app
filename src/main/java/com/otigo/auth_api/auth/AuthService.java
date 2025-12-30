@@ -1,9 +1,9 @@
 package com.otigo.auth_api.auth;
 
 import com.otigo.auth_api.config.JwtService;
-import com.otigo.auth_api.auth.LoginRequest;
-import com.otigo.auth_api.auth.RegisterRequest;
-import com.otigo.auth_api.auth.LoginResponse;
+//import com.otigo.auth_api.auth.LoginRequest;
+//import com.otigo.auth_api.auth.RegisterRequest;
+//import com.otigo.auth_api.auth.LoginResponse;
 //import com.otigo.auth_api.dto.request.LoginRequest;
 //import com.otigo.auth_api.dto.request.RegisterRequest;
 import com.otigo.auth_api.dto.request.VerifyCodeRequest;
@@ -90,7 +90,8 @@ public class AuthService {
         // Geçici token dön (Henüz yetkileri kısıtlı olabilir)
         //var jwtToken = jwtService.generateToken(user);
         //return new LoginResponse(jwtToken, "dummy-refresh-token");
-        return new LoginResponse("kayit-ok", "kayit-ok");
+        //return new LoginResponse("kayit-ok", "kayit-ok");
+        return new LoginResponse("kayit-bekleniyor", "kayit-bekleniyor", null, null);
     }
 
     /**
@@ -139,7 +140,15 @@ public class AuthService {
         // 8. Artık ROLÜ olan ve AKTİF bir kullanıcı için Token üret
         //var jwtToken = jwtService.generateToken(user);
         //return new LoginResponse(jwtToken, "dummy-refresh-token");
-        return new LoginResponse("kayit-asamasi", "kayit-asamasi");
+        //return new LoginResponse("kayit-asamasi", "kayit-asamasi");
+        var jwtToken = jwtService.generateToken(user);
+        
+        return new LoginResponse(
+            jwtToken, 
+            "dummy-refresh-token", 
+            user.getId(), 
+            user.getRole().name()
+        );
     }
 
     // --- DİĞER METOTLAR ---
@@ -153,7 +162,13 @@ public class AuthService {
         );
         var user = userRepository.findByEmail(request.getEmail()).orElseThrow();
         var jwtToken = jwtService.generateToken(user);
-        return new LoginResponse(jwtToken, "dummy-refresh-token");
+        //return new LoginResponse(jwtToken, "dummy-refresh-token");
+        return new LoginResponse(
+                jwtToken,
+                "dummy-refresh-token",
+                user.getId(),           // Frontend burayı alıp saklayacak
+                user.getRole().name()   // Frontend buraya bakıp yönlendirme yapacak (EXPERT -> /expert-home)
+        );
     }
 
     public void registerChild(Child child) {
