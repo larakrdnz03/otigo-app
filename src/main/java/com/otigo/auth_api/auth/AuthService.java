@@ -17,12 +17,18 @@ import com.otigo.auth_api.service.ActivityService;
 import com.otigo.auth_api.token.VerificationToken;
 import com.otigo.auth_api.token.VerificationTokenRepository;
 
+import jakarta.mail.internet.MimeMessage;
+
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import jakarta.mail.internet.MimeMessage;
+import org.springframework.mail.javamail.MimeMessageHelper;
 
 import java.util.Random;
 
@@ -91,7 +97,15 @@ public class AuthService {
         //var jwtToken = jwtService.generateToken(user);
         //return new LoginResponse(jwtToken, "dummy-refresh-token");
         //return new LoginResponse("kayit-ok", "kayit-ok");
-        return new LoginResponse("kayit-bekleniyor", "kayit-bekleniyor", null, null);
+        //return new LoginResponse("kayit-bekleniyor", "kayit-bekleniyor", null, null);
+        return new LoginResponse(
+            "kayit-bekleniyor",     // accessToken
+            "kayit-bekleniyor",     // refreshToken
+            user.getId(),           // ✅ userId (Artık null değil, gerçek ID dönelim)
+            null,                   // role (Henüz seçmediği için null)
+            user.getFirstname(),    // ✅ firstname (YENİ)
+            user.getLastname()      // ✅ lastname (YENİ)
+        );
     }
 
     /**
@@ -143,12 +157,21 @@ public class AuthService {
         //return new LoginResponse("kayit-asamasi", "kayit-asamasi");
         var jwtToken = jwtService.generateToken(user);
         
-        return new LoginResponse(
+        /*return new LoginResponse(
             jwtToken, 
             "dummy-refresh-token", 
             user.getId(), 
             user.getRole().name()
+        );*/
+        return new LoginResponse(
+            jwtToken, 
+            "dummy-refresh-token", 
+            user.getId(), 
+            user.getRole().name(),
+            user.getFirstname(), // ✅ Ad eklendi
+            user.getLastname()   // ✅ Soyad eklendi
         );
+
     }
 
     // --- DİĞER METOTLAR ---
@@ -163,11 +186,19 @@ public class AuthService {
         var user = userRepository.findByEmail(request.getEmail()).orElseThrow();
         var jwtToken = jwtService.generateToken(user);
         //return new LoginResponse(jwtToken, "dummy-refresh-token");
-        return new LoginResponse(
+        /*return new LoginResponse(
                 jwtToken,
                 "dummy-refresh-token",
                 user.getId(),           // Frontend burayı alıp saklayacak
                 user.getRole().name()   // Frontend buraya bakıp yönlendirme yapacak (EXPERT -> /expert-home)
+        );*/
+        return new LoginResponse(
+                jwtToken,
+                "dummy-refresh-token",
+                user.getId(),
+                user.getRole().name(),
+                user.getFirstname(), // ✅ Ad
+                user.getLastname()   // ✅ Soyad
         );
     }
 
@@ -209,7 +240,7 @@ public class AuthService {
         return String.valueOf(code);
     }
 
-    private void sendVerificationEmail(UserEntity user, String code) {
+    /*private void sendVerificationEmail(UserEntity user, String code) {
         try {
             SimpleMailMessage email = new SimpleMailMessage();
             email.setTo(user.getEmail());
@@ -219,6 +250,36 @@ public class AuthService {
                     "Bu kodu kimseyle paylaşma.");
             mailSender.send(email);
             System.out.println("✅ DOĞRULAMA KODU GÖNDERİLDİ: " + code);
+        } catch (Exception e) {
+            System.err.println("❌ MAİL HATASI: " + e.getMessage());
+        }
+    }*/
+
+        private void sendVerificationEmail(UserEntity user, String code) {
+        try {
+            // SimpleMailMessage yerine MimeMessage kullanıyoruz
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+
+            // İŞTE SİHİRLİ KISIM BURASI:
+            // 1. parametre: Senin gerçek mailin
+            // 2. parametre: Kullanıcının ekranda göreceği isim
+            helper.setFrom("laraminakaradenizz@gmail.com", "OTIGO Destek");
+
+            helper.setTo(user.getEmail());
+            helper.setSubject("Doğrulama Kodun - Otigo");
+            
+            // Mail içeriği
+            String mailContent = "Merhaba " + user.getFirstname() + ",\n\n" +
+                    "Giriş için doğrulama kodun: " + code + "\n\n" +
+                    "Bu kodu kimseyle paylaşma.\n\n" + 
+                    "Sevgiler,\nOTIGO Ekibi";
+            
+            helper.setText(mailContent, false); // false: Düz yazı (HTML değil)
+
+            mailSender.send(message);
+            System.out.println("✅ DOĞRULAMA KODU GÖNDERİLDİ (OTIGO Destek adıyla): " + code);
+
         } catch (Exception e) {
             System.err.println("❌ MAİL HATASI: " + e.getMessage());
         }

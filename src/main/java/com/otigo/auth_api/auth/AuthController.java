@@ -41,6 +41,7 @@ public class AuthController {
     public ResponseEntity<LoginResponse> verify(@RequestBody VerifyCodeRequest request) {
         return ResponseEntity.ok(authService.verifyUser(request));
     }
+    
 
     // Frontend buraya istek atıp "Kod doğru mu?" diye soracak
     @PostMapping("/check-code")
