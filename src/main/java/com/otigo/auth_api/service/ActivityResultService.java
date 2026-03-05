@@ -18,69 +18,81 @@ import java.util.List;
 public class ActivityResultService {
 
     private final ActivityResultRepository activityResultRepository;
-    private final ChildRepository childRepository; // Sonucun ekleneceği çocuğu bulmak için
-
+    private final ChildRepository childRepository;
     private final ActivityRepository activityRepository;
 
-    public ActivityResultService(ActivityResultRepository activityResultRepository, ChildRepository childRepository, ActivityRepository activityRepository) {
+    public ActivityResultService(ActivityResultRepository activityResultRepository,
+                                  ChildRepository childRepository,
+                                  ActivityRepository activityRepository) {
         this.activityResultRepository = activityResultRepository;
         this.childRepository = childRepository;
         this.activityRepository = activityRepository;
     }
 
-    /**
-     * Mobil uygulamadan gelen oyun sonucunu veritabanına kaydeder.
-     * @param childId Bu sonucun ait olduğu çocuğun ID'si
-     * @param request Mobil uygulamadan gelen DTO (hata sayısı, skor vb.)
-     * @return Veritabanına kaydedilen GameResult nesnesi
-     */
-    @Transactional // Bu metot veritabanına yazma işlemi yapar
+    @Transactional
     public ActivityResult saveActivityResult(Long childId, CreateActivityResultRequest request) {
-        
-        // 1. Sonucun ekleneceği çocuğu bul
+
         Child child = childRepository.findById(childId)
-                .orElseThrow(() -> new RuntimeException("Oyun sonucu eklenecek çocuk bulunamadı. ID: " + childId));
+                .orElseThrow(() -> new RuntimeException("Çocuk bulunamadı. ID: " + childId));
 
         Activity activity = activityRepository.findById(request.getActivityId())
-                .orElseThrow(() -> new RuntimeException("Aktivite bulunamadı. ID: " + request.getActivityId()));        
+                .orElseThrow(() -> new RuntimeException("Aktivite bulunamadı. ID: " + request.getActivityId()));
 
-        // 2. DTO'dan gelen verilerle yeni bir GameResult (Entity) nesnesi oluştur
         ActivityResult newResult = new ActivityResult();
-        newResult.setChild(child); // Çocuğu bağla
+        newResult.setChild(child);
         newResult.setActivity(activity);
-        
-        // DTO'daki tüm alanları Entity'ye kopyala
-        //newResult.set(request.getGameName());
         newResult.setScore(request.getScore());
         newResult.setDurationSeconds(request.getDurationSeconds());
         newResult.setMistakesMade(request.getMistakesMade());
         newResult.setParentHelped(request.isParentHelped());
         newResult.setParentHelpLevel(request.getParentHelpLevel());
         newResult.setParentFeedback(request.getParentFeedback());
-        
-        // Eğer mobil uygulama tarih göndermediyse, şu anki zamanı kullan
+        newResult.setParentHelpCount(request.getParentHelpCount());
+        newResult.setTotalTargetCount(request.getTotalTargetCount());
+        newResult.setLevelPlayed(request.getLevelPlayed()); // Hangi level'da oynandı
         newResult.setPlayedAt(
             request.getPlayedAt() != null ? request.getPlayedAt() : LocalDateTime.now()
         );
 
-        // 3. Yeni oluşturulan sonucu veritabanına kaydet
+        // --- BAĞIMSIZLIK SKORU HESABI ---
+        // Formül: (1 - yardımSayısı / toplamHedef) x 100
+        // Kenar durum: totalTargetCount 0 gelirse sıfıra bölme hatası önlenir
+        double independenceScore = calculateIndependenceScore(
+            request.getParentHelpCount(),
+            request.getTotalTargetCount()
+        );
+        newResult.setIndependenceScore(independenceScore);
+
+        // parentHelped alanını da otomatik doldur (geriye dönük uyumluluk)
+        if (request.getParentHelpCount() > 0) {
+            newResult.setParentHelped(true);
+        }
+
         return activityResultRepository.save(newResult);
     }
 
     /**
-     * Bir çocuğa ait tüm oyun sonuçlarını (Gelişim Raporu için) listeler.
-     * @param childId Raporu istenen çocuğun ID'si
-     * @return O çocuğa ait, tarihe göre sıralanmış sonuç listesi
+     * Bağımsızlık yüzdesini hesaplar.
+     * Formül: (1 - parentHelpCount / totalTargetCount) x 100
+     *
+     * @param helpCount      Veli kaç kez yardım etti
+     * @param totalTargets   O level'daki toplam hedef sayısı
+     * @return 0.0 ile 100.0 arasında bağımsızlık yüzdesi
      */
-    @Transactional(readOnly = true) // Sadece okuma işlemi
+    public double calculateIndependenceScore(int helpCount, int totalTargets) {
+        if (totalTargets <= 0) return 100.0; // Hedef yoksa tam bağımsız say
+        if (helpCount <= 0) return 100.0;    // Hiç yardım almadıysa tam bağımsız
+        if (helpCount >= totalTargets) return 0.0; // Her hedefte yardım aldıysa sıfır
+
+        double score = (1.0 - (double) helpCount / totalTargets) * 100.0;
+        // 0-100 arasında sınırla
+        return Math.max(0.0, Math.min(100.0, score));
+    }
+
+    @Transactional(readOnly = true)
     public List<ActivityResult> getActivityResultsForChild(Long childId) {
-        
-        // 1. Çocuğu bul
         Child child = childRepository.findById(childId)
                 .orElseThrow(() -> new RuntimeException("Çocuk bulunamadı. ID: " + childId));
-        
-        // 2. GameResultRepository'de yazdığımız özel sorguyu çağır
-        // (findByChildOrderByPlayedAtDesc)
         return activityResultRepository.findByChildOrderByPlayedAtDesc(child);
     }
 }

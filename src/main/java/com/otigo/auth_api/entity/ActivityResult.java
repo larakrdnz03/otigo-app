@@ -2,7 +2,7 @@ package com.otigo.auth_api.entity;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
-
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.otigo.auth_api.entity.enums.HelpLevel;
 
 @Entity
@@ -15,115 +15,82 @@ public class ActivityResult {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "activity_id", nullable = false)
+    @JsonIgnore
     private Activity activity;
 
-    private Integer score; // Skor (Tamsayı)
+    private Integer score;
+    private int durationSeconds;
+    private int mistakesMade;
+    private boolean parentHelped;
 
-    private int durationSeconds; // aktivite ne kadar sürdü (saniye)
+    @Enumerated(EnumType.STRING)
+    private HelpLevel parentHelpLevel;
 
-    private int mistakesMade; // Çocuk ne kadar hata yaptı
-
-    private boolean parentHelped; // Veli yardım etti mi? (True/False)
-
-    @Enumerated(EnumType.STRING) // Enum'u metin olarak kaydet (örn: "LITTLE")
-    private HelpLevel parentHelpLevel; // Ne kadar yardım etti?
-
-    @Lob // Uzun metin alanı
+    @Lob
     @Column(columnDefinition = "TEXT")
-    private String parentFeedback; // Veli geribildirim/not ekledi mi?
-    
+    private String parentFeedback;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "child_id", nullable = false)
-    private Child child; // Bu sonucun ait olduğu çocuk
+    @JsonIgnore
+    private Child child;
 
     @Column(nullable = false)
-    private LocalDateTime playedAt; // Oyunun oynandığı tarih
+    private LocalDateTime playedAt;
 
-    // --- Constructor'lar ---
+    @Column(nullable = false)
+    private int levelPlayed = 1;
 
-    public ActivityResult() {
-        // JPA için boş constructor
-    }
+    @Column(nullable = false)
+    private int parentHelpCount = 0;
 
-    // --- Getter ve Setter'lar ---
+    @Column(nullable = false)
+    private int totalTargetCount = 1;
 
-    public Long getId() {
-        return id;
-    }
+    @Column(nullable = false)
+    private double independenceScore = 100.0;
 
-    public void setId(Long id) {
-        this.id = id;
-    }
+    public ActivityResult() {}
 
-    public Activity getActivity() {
-        return activity;
-    }
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
 
-    public void setActivity(Activity activity) {
-        this.activity = activity;
-    }
+    public Activity getActivity() { return activity; }
+    public void setActivity(Activity activity) { this.activity = activity; }
 
-    public int getScore() {
-        return score;
-    }
+    public int getScore() { return score; }
+    public void setScore(int score) { this.score = score; }
 
-    public void setScore(int score) {
-        this.score = score;
-    }
+    public int getDurationSeconds() { return durationSeconds; }
+    public void setDurationSeconds(int durationSeconds) { this.durationSeconds = durationSeconds; }
 
-    public int getDurationSeconds() {
-        return durationSeconds;
-    }
+    public int getMistakesMade() { return mistakesMade; }
+    public void setMistakesMade(int mistakesMade) { this.mistakesMade = mistakesMade; }
 
-    public void setDurationSeconds(int durationSeconds) {
-        this.durationSeconds = durationSeconds;
-    }
+    public boolean isParentHelped() { return parentHelped; }
+    public void setParentHelped(boolean parentHelped) { this.parentHelped = parentHelped; }
 
-    public int getMistakesMade() {
-        return mistakesMade;
-    }
+    public HelpLevel getParentHelpLevel() { return parentHelpLevel; }
+    public void setParentHelpLevel(HelpLevel parentHelpLevel) { this.parentHelpLevel = parentHelpLevel; }
 
-    public void setMistakesMade(int mistakesMade) {
-        this.mistakesMade = mistakesMade;
-    }
+    public String getParentFeedback() { return parentFeedback; }
+    public void setParentFeedback(String parentFeedback) { this.parentFeedback = parentFeedback; }
 
-    public boolean isParentHelped() {
-        return parentHelped;
-    }
+    public Child getChild() { return child; }
+    public void setChild(Child child) { this.child = child; }
 
-    public void setParentHelped(boolean parentHelped) {
-        this.parentHelped = parentHelped;
-    }
+    public LocalDateTime getPlayedAt() { return playedAt; }
+    public void setPlayedAt(LocalDateTime playedAt) { this.playedAt = playedAt; }
 
-    public HelpLevel getParentHelpLevel() {
-        return parentHelpLevel;
-    }
+    public int getLevelPlayed() { return levelPlayed; }
+    public void setLevelPlayed(int levelPlayed) { this.levelPlayed = levelPlayed; }
 
-    public void setParentHelpLevel(HelpLevel parentHelpLevel) {
-        this.parentHelpLevel = parentHelpLevel;
-    }
+    public int getParentHelpCount() { return parentHelpCount; }
+    public void setParentHelpCount(int parentHelpCount) { this.parentHelpCount = parentHelpCount; }
 
-    public String getParentFeedback() {
-        return parentFeedback;
-    }
+    public int getTotalTargetCount() { return totalTargetCount; }
+    public void setTotalTargetCount(int totalTargetCount) { this.totalTargetCount = totalTargetCount; }
 
-    public void setParentFeedback(String parentFeedback) {
-        this.parentFeedback = parentFeedback;
-    }
-
-    public Child getChild() {
-        return child;
-    }
-
-    public void setChild(Child child) {
-        this.child = child;
-    }
-
-    public LocalDateTime getPlayedAt() {
-        return playedAt;
-    }
-
-    public void setPlayedAt(LocalDateTime playedAt) {
-        this.playedAt = playedAt;
-    }
+    public double getIndependenceScore() { return independenceScore; }
+    public void setIndependenceScore(double independenceScore) { this.independenceScore = independenceScore; }
 }
