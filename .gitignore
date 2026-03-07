@@ -45,3 +45,4 @@ build/
 ### VS Code ###
 .vscode/
 >>>>>>> bbd7050 (otigo ilk yükleme)
+src/main/resources/application.properties
