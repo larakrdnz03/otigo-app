@@ -5,10 +5,11 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import com.otigo.auth_api.entity.enums.ActivityType;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 @Entity
-@Table(name = "activites")
-public class   Activity {
+@Table(name = "activities") // Ufak bir İngilizce düzeltmesi (activites -> activities)
+public class Activity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -17,19 +18,22 @@ public class   Activity {
     @Column(nullable = false)
     private String name;
 
-    @Enumerated(EnumType.STRING) // Veritabanına yazı olarak (GAME/EVENT) kaydeder
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private ActivityType type;
 
     @Column(nullable = false)
     private int currentLevel = 1;
 
+    // --- DOĞRU KULLANIM BURASI ---
+    @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "child_id", nullable = false)
     private Child child;
 
+    @JsonIgnore // Uzman önerileri de sonsuz döngü yapmasın
     @OneToMany(mappedBy="activity", fetch = FetchType.LAZY)
-    private List<ExpertRecommendation> recommendations ; 
+    private List<ExpertRecommendation> recommendations; 
 
     private LocalDateTime lastPlayedAt;
 
@@ -37,8 +41,8 @@ public class   Activity {
     public Activity() {
     }
 
-    // --- 2. PARAMETRELİ CONSTRUCTOR (SENİN HATANIN ÇÖZÜMÜ BURASI) ---
-    public Activity(String name, ActivityType type,Child child) {
+    // --- 2. PARAMETRELİ CONSTRUCTOR ---
+    public Activity(String name, ActivityType type, Child child) {
         this.name = name;
         this.type = type;
         this.child = child;

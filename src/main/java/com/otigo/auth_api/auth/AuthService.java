@@ -19,7 +19,7 @@ import com.otigo.auth_api.token.VerificationTokenRepository;
 
 import jakarta.mail.internet.MimeMessage;
 
-import org.springframework.mail.SimpleMailMessage;
+//import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -27,8 +27,8 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import jakarta.mail.internet.MimeMessage;
-import org.springframework.mail.javamail.MimeMessageHelper;
+//import jakarta.mail.internet.MimeMessage;
+//import org.springframework.mail.javamail.MimeMessageHelper;
 
 import java.util.Random;
 

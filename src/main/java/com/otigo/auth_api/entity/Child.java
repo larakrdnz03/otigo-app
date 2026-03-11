@@ -5,6 +5,7 @@ import java.util.ArrayList; // Listeler için
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 @Entity
 @Table(name = "children")
@@ -22,6 +23,7 @@ public class Child {
     private Set<Expert> experts = new HashSet<>(); 
 
     // Çocuğun Velisi (Parent) - İlişkinin Sahibi Burası (FK burada)
+    @JsonIgnore // BUNU EKLE
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "parent_id", nullable = false)
     private UserEntity parent;
