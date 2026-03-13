@@ -8,8 +8,10 @@ import org.springframework.web.bind.annotation.*;
 
 import com.otigo.auth_api.dto.response.ReportResponse;
 import com.otigo.auth_api.dto.response.VisualPerceptionReportDto;
+import com.otigo.auth_api.dto.response.MathSkillsReportDto;
 import com.otigo.auth_api.service.ReportService;
 import com.otigo.auth_api.service.VisualPerceptionReportService;
+import com.otigo.auth_api.service.MathSkillsReportService;
 
 @RestController
 @RequestMapping("/api/reports")
@@ -17,17 +19,16 @@ public class ReportController {
 
     private final ReportService reportService;
     private final VisualPerceptionReportService visualPerceptionReportService;
+    private final MathSkillsReportService mathSkillsReportService;
 
     public ReportController(ReportService reportService,
-                            VisualPerceptionReportService visualPerceptionReportService) {
+                            VisualPerceptionReportService visualPerceptionReportService,
+                            MathSkillsReportService mathSkillsReportService) {
         this.reportService = reportService;
         this.visualPerceptionReportService = visualPerceptionReportService;
+        this.mathSkillsReportService = mathSkillsReportService;
     }
 
-    /**
-     * Genel gelişim raporu (mevcut, değişmedi)
-     * GET /api/reports/{childId}
-     */
     @GetMapping("/{childId}")
     public ResponseEntity<ReportResponse> getReportData(
             @PathVariable Long childId,
@@ -36,10 +37,6 @@ public class ReportController {
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * PDF indirme (mevcut, değişmedi)
-     * GET /api/reports/download/{childId}
-     */
     @GetMapping("/download/{childId}")
     public ResponseEntity<byte[]> downloadPdfReport(
             @PathVariable Long childId,
@@ -51,32 +48,6 @@ public class ReportController {
         return ResponseEntity.ok().headers(headers).body(pdfData);
     }
 
-    /**
-     * YENİ: Görsel Algı ve Dikkat Becerileri kategorisi raporu
-     *
-     * Dönen JSON örneği:
-     * {
-     *   "childId": 1,
-     *   "childName": "Ayşe",
-     *   "shadowMatching": {
-     *     "gameName": "Gölge-Nesne Eşleştirme",
-     *     "currentLevel": 4,
-     *     "totalSessionCount": 6,
-     *     "avgMistakes": 2.17,
-     *     "avgIndependenceScore": 78.5,
-     *     "sessions": [
-     *       { "sessionNumber": 1, "level": 1, "mistakesMade": 2,
-     *         "independenceScore": 50.0, "parentHelpCount": 1,
-     *         "totalTargetCount": 2, "durationSeconds": 45 },
-     *       ...
-     *     ]
-     *   },
-     *   "findDifferent": { ... },
-     *   "selectCorrect": { ... }
-     * }
-     *
-     * GET /api/reports/{childId}/visual-perception
-     */
     @GetMapping("/{childId}/visual-perception")
     public ResponseEntity<?> getVisualPerceptionReport(
             @PathVariable Long childId,
@@ -84,6 +55,19 @@ public class ReportController {
         try {
             VisualPerceptionReportDto report =
                     visualPerceptionReportService.generateReport(childId);
+            return ResponseEntity.ok(report);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/{childId}/math-skills")
+    public ResponseEntity<?> getMathSkillsReport(
+            @PathVariable Long childId,
+            Authentication authentication) {
+        try {
+            MathSkillsReportDto report =
+                    mathSkillsReportService.generateReport(childId);
             return ResponseEntity.ok(report);
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
