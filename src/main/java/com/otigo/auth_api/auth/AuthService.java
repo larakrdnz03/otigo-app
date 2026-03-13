@@ -1,25 +1,19 @@
 package com.otigo.auth_api.auth;
 
 import com.otigo.auth_api.config.JwtService;
-//import com.otigo.auth_api.auth.LoginRequest;
-//import com.otigo.auth_api.auth.RegisterRequest;
-//import com.otigo.auth_api.auth.LoginResponse;
-//import com.otigo.auth_api.dto.request.LoginRequest;
-//import com.otigo.auth_api.dto.request.RegisterRequest;
 import com.otigo.auth_api.dto.request.VerifyCodeRequest;
-//import com.otigo.auth_api.dto.response.LoginResponse;
 import com.otigo.auth_api.entity.Child;
 import com.otigo.auth_api.entity.UserEntity;
 import com.otigo.auth_api.entity.enums.AccountStatus;
 import com.otigo.auth_api.repository.ChildRepository;
 import com.otigo.auth_api.repository.UserRepository;
 import com.otigo.auth_api.service.ActivityService;
+import com.otigo.auth_api.token.PasswordResetToken;
+import com.otigo.auth_api.token.PasswordResetTokenRepository;
 import com.otigo.auth_api.token.VerificationToken;
 import com.otigo.auth_api.token.VerificationTokenRepository;
 
 import jakarta.mail.internet.MimeMessage;
-
-//import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -27,10 +21,9 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-//import jakarta.mail.internet.MimeMessage;
-//import org.springframework.mail.javamail.MimeMessageHelper;
-
+import java.time.LocalDateTime;
 import java.util.Random;
+import java.util.UUID;
 
 @Service
 public class AuthService {
@@ -43,6 +36,7 @@ public class AuthService {
     private final JavaMailSender mailSender;
     private final VerificationTokenRepository tokenRepository;
     private final ActivityService gameService;
+    private final PasswordResetTokenRepository passwordResetTokenRepository;
 
     public AuthService(UserRepository userRepository,
                        ChildRepository childRepository,
@@ -51,7 +45,8 @@ public class AuthService {
                        AuthenticationManager authenticationManager,
                        JavaMailSender mailSender,
                        ActivityService gameService,
-                       VerificationTokenRepository tokenRepository) {
+                       VerificationTokenRepository tokenRepository,
+                       PasswordResetTokenRepository passwordResetTokenRepository) {
         this.userRepository = userRepository;
         this.childRepository = childRepository;
         this.passwordEncoder = passwordEncoder;
@@ -60,121 +55,75 @@ public class AuthService {
         this.mailSender = mailSender;
         this.gameService = gameService;
         this.tokenRepository = tokenRepository;
+        this.passwordResetTokenRepository = passwordResetTokenRepository;
     }
 
-    /**
-     * 1. ADIM: KAYIT OL (ROL YOK)
-     * Kullanıcı sadece İsim, Soyisim, Email, Şifre girer.
-     * Rol bilgisi (VELI/UZMAN) burada alınmaz, NULL bırakılır.
-     */
     public LoginResponse register(RegisterRequest request) {
 
-        // Email zaten var mı kontrolü
         if (userRepository.findByEmail(request.getEmail()).isPresent()) {
             throw new RuntimeException("Bu email adresi zaten kullanılıyor!");
         }
 
-        // Kullanıcıyı oluştur
         UserEntity user = new UserEntity();
         user.setFirstname(request.getFirstname());
         user.setLastname(request.getLastname());
         user.setEmail(request.getEmail());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
-        
-        // DİKKAT: Rol henüz seçilmediği için null veya varsayılan bir değer atanır.
-        user.setRole(null); 
-        user.setStatus(AccountStatus.PENDING_VERIFICATION); // Henüz doğrulanmadı
+        user.setRole(null);
+        user.setStatus(AccountStatus.PENDING_VERIFICATION);
 
-        // Kaydet
         userRepository.save(user);
 
-        // Doğrulama kodu üret ve gönder
         String verificationCode = generateVerificationCode();
         saveUserVerificationToken(user, verificationCode);
         sendVerificationEmail(user, verificationCode);
 
-        // Geçici token dön (Henüz yetkileri kısıtlı olabilir)
-        //var jwtToken = jwtService.generateToken(user);
-        //return new LoginResponse(jwtToken, "dummy-refresh-token");
-        //return new LoginResponse("kayit-ok", "kayit-ok");
-        //return new LoginResponse("kayit-bekleniyor", "kayit-bekleniyor", null, null);
         return new LoginResponse(
-            "kayit-bekleniyor",     // accessToken
-            "kayit-bekleniyor",     // refreshToken
-            user.getId(),           // ✅ userId (Artık null değil, gerçek ID dönelim)
-            null,                   // role (Henüz seçmediği için null)
-            user.getFirstname(),    // ✅ firstname (YENİ)
-            user.getLastname()      // ✅ lastname (YENİ)
+            "kayit-bekleniyor",
+            "kayit-bekleniyor",
+            user.getId(),
+            null,
+            user.getFirstname(),
+            user.getLastname()
         );
     }
 
-    /**
-     * 2. ADIM: DOĞRULA VE ROL ATA
-     * Kullanıcı maildeki kodu girer VE EKRANDAN ROLÜNÜ SEÇER.
-     * Frontend bize {email, code, role} gönderir.
-     */
     public LoginResponse verifyUser(VerifyCodeRequest request) {
-        // 1. Kullanıcıyı bul
         UserEntity user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı"));
 
-        // 2. Token verisini çek
         VerificationToken tokenData = tokenRepository.findByUser(user)
                 .orElseThrow(() -> new RuntimeException("Doğrulama kodu bulunamadı"));
 
-        // 3. Kod doğru mu?
         if (!tokenData.getToken().equals(request.getCode())) {
             throw new RuntimeException("Geçersiz doğrulama kodu!");
         }
 
-        // 4. Süresi dolmuş mu?
-        if (tokenData.getExpiresAt().isBefore(java.time.LocalDateTime.now())) {
+        if (tokenData.getExpiresAt().isBefore(LocalDateTime.now())) {
             throw new RuntimeException("Kodun süresi dolmuş. Lütfen 'Kodu Tekrar Gönder' yapın.");
         }
 
-        // 5. ROL KONTROLÜ VE ATAMASI (YENİ KISIM)
-        // VerifyCodeRequest içinde 'role' alanı dolu gelmeli!
         if (request.getRole() == null) {
             throw new RuntimeException("Lütfen bir kullanıcı rolü (Veli/Uzman) seçin!");
         }
 
-        // Kullanıcıya frontend'den gelen rolü ata
         user.setRole(request.getRole());
-        
-        // 6. Hesabı Aktif Et
         user.setStatus(AccountStatus.ACTIVE);
-        
-        // Son halini kaydet
         userRepository.save(user);
 
-        // 7. Token'ı kullanıldı olarak işaretle
-        tokenData.setConfirmedAt(java.time.LocalDateTime.now());
+        tokenData.setConfirmedAt(LocalDateTime.now());
         tokenRepository.save(tokenData);
 
-        // 8. Artık ROLÜ olan ve AKTİF bir kullanıcı için Token üret
-        //var jwtToken = jwtService.generateToken(user);
-        //return new LoginResponse(jwtToken, "dummy-refresh-token");
-        //return new LoginResponse("kayit-asamasi", "kayit-asamasi");
         var jwtToken = jwtService.generateToken(user);
-        
-        /*return new LoginResponse(
-            jwtToken, 
-            "dummy-refresh-token", 
-            user.getId(), 
-            user.getRole().name()
-        );*/
         return new LoginResponse(
-            jwtToken, 
-            "dummy-refresh-token", 
-            user.getId(), 
+            jwtToken,
+            "dummy-refresh-token",
+            user.getId(),
             user.getRole().name(),
-            user.getFirstname(), // ✅ Ad eklendi
-            user.getLastname()   // ✅ Soyad eklendi
+            user.getFirstname(),
+            user.getLastname()
         );
-
     }
-
-    // --- DİĞER METOTLAR ---
 
     public LoginResponse login(LoginRequest request) {
         authenticationManager.authenticate(
@@ -185,20 +134,13 @@ public class AuthService {
         );
         var user = userRepository.findByEmail(request.getEmail()).orElseThrow();
         var jwtToken = jwtService.generateToken(user);
-        //return new LoginResponse(jwtToken, "dummy-refresh-token");
-        /*return new LoginResponse(
-                jwtToken,
-                "dummy-refresh-token",
-                user.getId(),           // Frontend burayı alıp saklayacak
-                user.getRole().name()   // Frontend buraya bakıp yönlendirme yapacak (EXPERT -> /expert-home)
-        );*/
         return new LoginResponse(
                 jwtToken,
                 "dummy-refresh-token",
                 user.getId(),
                 user.getRole().name(),
-                user.getFirstname(), // ✅ Ad
-                user.getLastname()   // ✅ Soyad
+                user.getFirstname(),
+                user.getLastname()
         );
     }
 
@@ -221,14 +163,53 @@ public class AuthService {
         sendVerificationEmail(user, newCode);
     }
 
+    public void forgotPassword(String email) {
+        UserEntity user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Bu email ile kayıtlı kullanıcı bulunamadı."));
+
+        passwordResetTokenRepository.findByUser(user)
+                .ifPresent(t -> passwordResetTokenRepository.delete(t));
+
+        String token = UUID.randomUUID().toString();
+        PasswordResetToken resetToken = new PasswordResetToken(
+                token,
+                user,
+                LocalDateTime.now(),
+                LocalDateTime.now().plusMinutes(15)
+        );
+        passwordResetTokenRepository.save(resetToken);
+
+        sendPasswordResetEmail(user, token);
+    }
+
+    public void resetPassword(String token, String newPassword) {
+        PasswordResetToken resetToken = passwordResetTokenRepository.findByToken(token)
+                .orElseThrow(() -> new RuntimeException("Geçersiz veya süresi dolmuş token."));
+
+        if (resetToken.getExpiresAt().isBefore(LocalDateTime.now())) {
+            throw new RuntimeException("Token süresi dolmuş. Lütfen tekrar şifre sıfırlama talebinde bulunun.");
+        }
+
+        if (resetToken.getUsedAt() != null) {
+            throw new RuntimeException("Bu token daha önce kullanılmış.");
+        }
+
+        UserEntity user = resetToken.getUser();
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+
+        resetToken.setUsedAt(LocalDateTime.now());
+        passwordResetTokenRepository.save(resetToken);
+    }
+
     private void saveUserVerificationToken(UserEntity user, String token) {
         VerificationToken verificationToken = tokenRepository.findByUser(user)
                 .orElse(new VerificationToken());
 
         verificationToken.setToken(token);
         verificationToken.setUser(user);
-        verificationToken.setCreatedAt(java.time.LocalDateTime.now());
-        verificationToken.setExpiresAt(java.time.LocalDateTime.now().plusMinutes(15));
+        verificationToken.setCreatedAt(LocalDateTime.now());
+        verificationToken.setExpiresAt(LocalDateTime.now().plusMinutes(15));
         verificationToken.setConfirmedAt(null);
 
         tokenRepository.save(verificationToken);
@@ -240,78 +221,65 @@ public class AuthService {
         return String.valueOf(code);
     }
 
-    /*private void sendVerificationEmail(UserEntity user, String code) {
+    private void sendVerificationEmail(UserEntity user, String code) {
         try {
-            SimpleMailMessage email = new SimpleMailMessage();
-            email.setTo(user.getEmail());
-            email.setSubject("Doğrulama Kodun - Otigo");
-            email.setText("Merhaba " + user.getFirstname() + ",\n\n" +
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            helper.setFrom("laraminakaradenizz@gmail.com", "OTIGO Destek");
+            helper.setTo(user.getEmail());
+            helper.setSubject("Doğrulama Kodun - Otigo");
+
+            String mailContent = "Merhaba " + user.getFirstname() + ",\n\n" +
                     "Giriş için doğrulama kodun: " + code + "\n\n" +
-                    "Bu kodu kimseyle paylaşma.");
-            mailSender.send(email);
+                    "Bu kodu kimseyle paylaşma.\n\n" +
+                    "Sevgiler,\nOTIGO Ekibi";
+
+            helper.setText(mailContent, false);
+            mailSender.send(message);
             System.out.println("✅ DOĞRULAMA KODU GÖNDERİLDİ: " + code);
         } catch (Exception e) {
             System.err.println("❌ MAİL HATASI: " + e.getMessage());
         }
-    }*/
+    }
 
-        private void sendVerificationEmail(UserEntity user, String code) {
+    private void sendPasswordResetEmail(UserEntity user, String token) {
         try {
-            // SimpleMailMessage yerine MimeMessage kullanıyoruz
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-
-            // İŞTE SİHİRLİ KISIM BURASI:
-            // 1. parametre: Senin gerçek mailin
-            // 2. parametre: Kullanıcının ekranda göreceği isim
             helper.setFrom("laraminakaradenizz@gmail.com", "OTIGO Destek");
-
             helper.setTo(user.getEmail());
-            helper.setSubject("Doğrulama Kodun - Otigo");
-            
-            // Mail içeriği
+            helper.setSubject("Şifre Sıfırlama - Otigo");
+
             String mailContent = "Merhaba " + user.getFirstname() + ",\n\n" +
-                    "Giriş için doğrulama kodun: " + code + "\n\n" +
-                    "Bu kodu kimseyle paylaşma.\n\n" + 
+                    "Şifre sıfırlama talebinde bulundunuz.\n\n" +
+                    "Şifre sıfırlama token'ınız: " + token + "\n\n" +
+                    "Bu token 15 dakika geçerlidir.\n\n" +
+                    "Eğer bu talebi siz yapmadıysanız bu maili görmezden gelin.\n\n" +
                     "Sevgiler,\nOTIGO Ekibi";
-            
-            helper.setText(mailContent, false); // false: Düz yazı (HTML değil)
 
+            helper.setText(mailContent, false);
             mailSender.send(message);
-            System.out.println("✅ DOĞRULAMA KODU GÖNDERİLDİ (OTIGO Destek adıyla): " + code);
-
+            System.out.println("✅ ŞİFRE SIFIRLAMA MAILI GÖNDERİLDİ: " + user.getEmail());
         } catch (Exception e) {
             System.err.println("❌ MAİL HATASI: " + e.getMessage());
         }
     }
 
-    /**
-     * Sadece kodun doğru olup olmadığını kontrol eder.
-     * Veritabanında kalıcı bir değişiklik yapmaz.
-     * Frontend'de "Rol Seçme Ekranına" geçiş izni vermek için kullanılır.
-     */
     public boolean checkVerificationCode(String email, String code) {
-        // 1. Kullanıcıyı bul
         UserEntity user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı"));
 
-        // 2. Token'ı bul
         VerificationToken tokenData = tokenRepository.findByUser(user)
                 .orElseThrow(() -> new RuntimeException("Doğrulama kodu bulunamadı"));
 
-        // 3. Kod eşleşiyor mu?
         if (!tokenData.getToken().equals(code)) {
             throw new RuntimeException("Geçersiz doğrulama kodu!");
         }
 
-        // 4. Süre dolmuş mu?
-        if (tokenData.getExpiresAt().isBefore(java.time.LocalDateTime.now())) {
+        if (tokenData.getExpiresAt().isBefore(LocalDateTime.now())) {
             throw new RuntimeException("Kodun süresi dolmuş.");
         }
 
-        return true; // Kod doğru!
+        return true;
     }
-
-
-
 }

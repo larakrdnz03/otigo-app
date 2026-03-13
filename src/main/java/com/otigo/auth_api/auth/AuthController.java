@@ -6,9 +6,8 @@ import org.springframework.web.bind.annotation.*;
 import com.otigo.auth_api.dto.request.VerifyCodeRequest;
 
 @RestController
-//@RequestMapping("/api/v1/auth")
 @RequestMapping("/auth")
-@CrossOrigin(origins = "*") // Test için *
+@CrossOrigin(origins = "*")
 public class AuthController {
 
     private final AuthService authService;
@@ -41,14 +40,10 @@ public class AuthController {
     public ResponseEntity<LoginResponse> verify(@RequestBody VerifyCodeRequest request) {
         return ResponseEntity.ok(authService.verifyUser(request));
     }
-    
 
-    // Frontend buraya istek atıp "Kod doğru mu?" diye soracak
     @PostMapping("/check-code")
     public ResponseEntity<String> checkCode(@RequestBody VerifyCodeRequest request) {
-        // Not: Request içinde sadece email ve code olması yeterli, role null gelebilir.
         boolean isValid = authService.checkVerificationCode(request.getEmail(), request.getCode());
-        
         if (isValid) {
             return ResponseEntity.ok("Kod Doğru");
         } else {
@@ -56,7 +51,23 @@ public class AuthController {
         }
     }
 
+    @PostMapping("/forgot-password")
+    public ResponseEntity<?> forgotPassword(@RequestBody ForgotPasswordRequest request) {
+        try {
+            authService.forgotPassword(request.getEmail());
+            return ResponseEntity.ok("Şifre sıfırlama maili gönderildi.");
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
 
-    // Refresh Token, Forgot Password gibi metotları şimdilik kaldırdık
-    // çünkü test için sadece register lazım.
+    @PostMapping("/reset-password")
+    public ResponseEntity<?> resetPassword(@RequestBody ResetPasswordRequest request) {
+        try {
+            authService.resetPassword(request.getToken(), request.getNewPassword());
+            return ResponseEntity.ok("Şifre başarıyla güncellendi.");
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
 }
