@@ -24,12 +24,12 @@ public class ActivityResult {
     private int mistakesMade;
     private boolean parentHelped;
 
-    @Enumerated(EnumType.STRING)
-    private HelpLevel parentHelpLevel;
+    /*@Enumerated(EnumType.STRING)
+    private HelpLevel parentHelpLevel;*/
 
-    @Lob
+    /*@Lob
     @Column(columnDefinition = "TEXT")
-    private String parentFeedback;
+    private String parentFeedback;*/
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "child_id", nullable = false)
@@ -71,11 +71,11 @@ public class ActivityResult {
     public boolean isParentHelped() { return parentHelped; }
     public void setParentHelped(boolean parentHelped) { this.parentHelped = parentHelped; }
 
-    public HelpLevel getParentHelpLevel() { return parentHelpLevel; }
-    public void setParentHelpLevel(HelpLevel parentHelpLevel) { this.parentHelpLevel = parentHelpLevel; }
+    /*public HelpLevel getParentHelpLevel() { return parentHelpLevel; }
+    public void setParentHelpLevel(HelpLevel parentHelpLevel) { this.parentHelpLevel = parentHelpLevel; }*/
 
-    public String getParentFeedback() { return parentFeedback; }
-    public void setParentFeedback(String parentFeedback) { this.parentFeedback = parentFeedback; }
+    /*public String getParentFeedback() { return parentFeedback; }
+    public void setParentFeedback(String parentFeedback) { this.parentFeedback = parentFeedback; }*/
 
     public Child getChild() { return child; }
     public void setChild(Child child) { this.child = child; }

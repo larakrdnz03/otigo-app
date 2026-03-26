@@ -45,8 +45,8 @@ public class ActivityResultService {
         newResult.setDurationSeconds(request.getDurationSeconds());
         newResult.setMistakesMade(request.getMistakesMade());
         newResult.setParentHelped(request.isParentHelped());
-        newResult.setParentHelpLevel(request.getParentHelpLevel());
-        newResult.setParentFeedback(request.getParentFeedback());
+        //newResult.setParentHelpLevel(request.getParentHelpLevel());
+        //newResult.setParentFeedback(request.getParentFeedback());
         newResult.setParentHelpCount(request.getParentHelpCount());
         newResult.setTotalTargetCount(request.getTotalTargetCount());
         newResult.setLevelPlayed(request.getLevelPlayed()); // Hangi level'da oynandı
