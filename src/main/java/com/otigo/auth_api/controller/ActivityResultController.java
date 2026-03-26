@@ -3,7 +3,7 @@ package com.otigo.auth_api.controller;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication; // Güvenlik için
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import com.otigo.auth_api.dto.request.CreateActivityResultRequest;
@@ -13,7 +13,7 @@ import com.otigo.auth_api.service.ActivityResultService;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/v1/activity-results") // Oyun sonuçları için yeni bir ana yol
+@RequestMapping("/api/v1/activities") // Daha kısa ve standart bir yol
 public class ActivityResultController {
 
     private final ActivityResultService activityResultService;
@@ -23,56 +23,37 @@ public class ActivityResultController {
     }
 
     /**
-     * Yeni bir aktivite sonucunu kaydeder.
-     * Bu endpoint'i mobil uygulama, oyun bittiğinde çağırır.
-     * POST /api/v1/activity-results/child/{childId}
-     *
-     * @param childId Sonucun ait olduğu çocuğun ID'si (URL'den gelir)
-     * @param request Oyun sonucunun detaylarını içeren JSON verisi (Body'den gelir)
+     * POST /api/v1/activities/result/{childId}
+     * Unity bu endpoint'i kullanarak sonucu gönderir.
      */
-    @PostMapping("/child/{childId}")
+    @PostMapping("/result/{childId}")
     public ResponseEntity<?> saveActivityResult(
             @PathVariable Long childId,
             @Valid @RequestBody CreateActivityResultRequest request,
-            Authentication authentication) { // İsteği sadece giriş yapmış kullanıcıların (Veli/Uzman) yapabilmesi için
-        
-        // TODO: Ekstra Güvenlik Kontrolü: 
-        // Giriş yapmış olan kullanıcının (authentication.getPrincipal()) 
-        // bu 'childId'ye erişim yetkisi var mı? (O çocuğun velisi mi veya uzmanı mı?)
-        // Şimdilik, giriş yapmış olmayı yeterli kabul ediyoruz.
+            Authentication authentication) {
         
         try {
+            // Service katmanında hem ana sonucu hem de içindeki levelResults listesini kaydediyoruz
             ActivityResult savedResult = activityResultService.saveActivityResult(childId, request);
-            // Başarılı olursa 201 Created (Oluşturuldu) kodu ve
-            // oluşturulan sonucun kendisini dön
             return ResponseEntity.status(HttpStatus.CREATED).body(savedResult);
-        } catch (RuntimeException e) {
-            // "Çocuk bulunamadı" hatasını yakala
-            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            // Hata durumunda arkadaşına anlamlı bir mesaj dönelim
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                                 .body("Sonuç kaydedilirken hata oluştu: " + e.getMessage());
         }
     }
 
     /**
-     * Bir çocuğa ait tüm oyun sonuçlarını (Gelişim Raporu) listeler.
-     * Bu endpoint'i mobil uygulama, "Görsel Rapor" ekranını çizerken çağırır.
-     * GET /api/v1/results/child/{childId}
-     *
-     * @param childId Raporu istenen çocuğun ID'si (URL'den gelir)
+     * GET /api/v1/activities/reports/{childId}
+     * Veli ekranında raporları listelerken kullanılır.
      */
-    @GetMapping("/child/{childId}")
-    public ResponseEntity<?> getActivityResultsForChild(
-            @PathVariable Long childId,
-            Authentication authentication) { // İsteği sadece giriş yapmış (Veli/Uzman) kullanıcıların yapabilmesi için
-
-        // TODO: Ekstra Güvenlik Kontrolü (Yukarıdakiyle aynı)
-
+    @GetMapping("/reports/{childId}")
+    public ResponseEntity<?> getActivityResultsForChild(@PathVariable Long childId) {
         try {
             List<ActivityResult> results = activityResultService.getActivityResultsForChild(childId);
-            // Başarılı olursa 200 OK ve sonuç listesini (JSON) dön
             return ResponseEntity.ok(results);
-        } catch (RuntimeException e) {
-            // "Çocuk bulunamadı" hatasını yakala
-            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Raporlar getirilemedi: " + e.getMessage());
         }
     }
 }
