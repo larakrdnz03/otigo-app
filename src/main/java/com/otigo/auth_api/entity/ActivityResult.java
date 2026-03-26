@@ -2,8 +2,8 @@ package com.otigo.auth_api.entity;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.otigo.auth_api.entity.enums.HelpLevel;
+import java.util.List;
+import java.util.ArrayList;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 @Entity
@@ -19,25 +19,17 @@ public class ActivityResult {
     @JsonIgnore
     private Activity activity;
 
-    private Integer score;
-    private int durationSeconds;
-    private int mistakesMade;
-    private boolean parentHelped;
-
-    /*@Enumerated(EnumType.STRING)
-    private HelpLevel parentHelpLevel;*/
-
-    /*@Lob
-    @Column(columnDefinition = "TEXT")
-    private String parentFeedback;*/
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "child_id", nullable = false)
     @JsonIgnore
     private Child child;
 
-    @Column(nullable = false)
-    private LocalDateTime playedAt;
+    private Integer score;
+    private int durationSeconds;
+    private int mistakesMade;
+    
+    // SİLMEDİĞİMİZ ALAN:
+    private boolean parentHelped;
 
     @Column(nullable = false)
     private int levelPlayed = 1;
@@ -51,16 +43,28 @@ public class ActivityResult {
     @Column(nullable = false)
     private double independenceScore = 100.0;
 
+    @Column(nullable = false)
+    private LocalDateTime playedAt;
+
+    // LEVEL DETAYLARI LİSTESİ
+    @ElementCollection
+    @CollectionTable(name = "level_results", joinColumns = @JoinColumn(name = "activity_result_id"))
+    private List<LevelResult> levelResults = new ArrayList<>();
+
     public ActivityResult() {}
 
+    // --- Getter ve Setter Metodları ---
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
     public Activity getActivity() { return activity; }
     public void setActivity(Activity activity) { this.activity = activity; }
 
-    public int getScore() { return score; }
-    public void setScore(int score) { this.score = score; }
+    public Child getChild() { return child; }
+    public void setChild(Child child) { this.child = child; }
+
+    public Integer getScore() { return score; }
+    public void setScore(Integer score) { this.score = score; }
 
     public int getDurationSeconds() { return durationSeconds; }
     public void setDurationSeconds(int durationSeconds) { this.durationSeconds = durationSeconds; }
@@ -68,20 +72,9 @@ public class ActivityResult {
     public int getMistakesMade() { return mistakesMade; }
     public void setMistakesMade(int mistakesMade) { this.mistakesMade = mistakesMade; }
 
+    // HATA ALDIĞIN KRİTİK METODLAR:
     public boolean isParentHelped() { return parentHelped; }
     public void setParentHelped(boolean parentHelped) { this.parentHelped = parentHelped; }
-
-    /*public HelpLevel getParentHelpLevel() { return parentHelpLevel; }
-    public void setParentHelpLevel(HelpLevel parentHelpLevel) { this.parentHelpLevel = parentHelpLevel; }*/
-
-    /*public String getParentFeedback() { return parentFeedback; }
-    public void setParentFeedback(String parentFeedback) { this.parentFeedback = parentFeedback; }*/
-
-    public Child getChild() { return child; }
-    public void setChild(Child child) { this.child = child; }
-
-    public LocalDateTime getPlayedAt() { return playedAt; }
-    public void setPlayedAt(LocalDateTime playedAt) { this.playedAt = playedAt; }
 
     public int getLevelPlayed() { return levelPlayed; }
     public void setLevelPlayed(int levelPlayed) { this.levelPlayed = levelPlayed; }
@@ -94,4 +87,10 @@ public class ActivityResult {
 
     public double getIndependenceScore() { return independenceScore; }
     public void setIndependenceScore(double independenceScore) { this.independenceScore = independenceScore; }
+
+    public LocalDateTime getPlayedAt() { return playedAt; }
+    public void setPlayedAt(LocalDateTime playedAt) { this.playedAt = playedAt; }
+
+    public List<LevelResult> getLevelResults() { return levelResults; }
+    public void setLevelResults(List<LevelResult> levelResults) { this.levelResults = levelResults; }
 }
