@@ -13,9 +13,11 @@ import com.otigo.auth_api.token.PasswordResetTokenRepository;
 import com.otigo.auth_api.token.VerificationToken;
 import com.otigo.auth_api.token.VerificationTokenRepository;
 
-import jakarta.mail.internet.MimeMessage;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
+import com.resend.Resend;
+import com.resend.services.emails.model.CreateEmailOptions;
+import com.resend.services.emails.model.CreateEmailResponse;
+
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -33,29 +35,29 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
-    private final JavaMailSender mailSender;
     private final VerificationTokenRepository tokenRepository;
     private final ActivityService gameService;
     private final PasswordResetTokenRepository passwordResetTokenRepository;
+    private final Resend resend;
 
     public AuthService(UserRepository userRepository,
                        ChildRepository childRepository,
                        PasswordEncoder passwordEncoder,
                        JwtService jwtService,
                        AuthenticationManager authenticationManager,
-                       JavaMailSender mailSender,
                        ActivityService gameService,
                        VerificationTokenRepository tokenRepository,
-                       PasswordResetTokenRepository passwordResetTokenRepository) {
+                       PasswordResetTokenRepository passwordResetTokenRepository,
+                       @Value("${resend.api.key}") String resendApiKey) {
         this.userRepository = userRepository;
         this.childRepository = childRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.authenticationManager = authenticationManager;
-        this.mailSender = mailSender;
         this.gameService = gameService;
         this.tokenRepository = tokenRepository;
         this.passwordResetTokenRepository = passwordResetTokenRepository;
+        this.resend = new Resend(resendApiKey);
     }
 
     public LoginResponse register(RegisterRequest request) {
@@ -223,20 +225,18 @@ public class AuthService {
 
     private void sendVerificationEmail(UserEntity user, String code) {
         try {
-            MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-            helper.setFrom("laraminakaradenizz@gmail.com", "OTIGO Destek");
-            helper.setTo(user.getEmail());
-            helper.setSubject("Doğrulama Kodun - Otigo");
+            CreateEmailOptions params = CreateEmailOptions.builder()
+                    .from("OTIGO Destek <onboarding@resend.dev>")
+                    .to(user.getEmail())
+                    .subject("Doğrulama Kodun - Otigo")
+                    .text("Merhaba " + user.getFirstname() + ",\n\n" +
+                          "Giriş için doğrulama kodun: " + code + "\n\n" +
+                          "Bu kodu kimseyle paylaşma.\n\n" +
+                          "Sevgiler,\nOTIGO Ekibi")
+                    .build();
 
-            String mailContent = "Merhaba " + user.getFirstname() + ",\n\n" +
-                    "Giriş için doğrulama kodun: " + code + "\n\n" +
-                    "Bu kodu kimseyle paylaşma.\n\n" +
-                    "Sevgiler,\nOTIGO Ekibi";
-
-            helper.setText(mailContent, false);
-            mailSender.send(message);
-            System.out.println("✅ DOĞRULAMA KODU GÖNDERİLDİ: " + code);
+            CreateEmailResponse response = resend.emails().send(params);
+            System.out.println("✅ DOĞRULAMA KODU GÖNDERİLDİ: " + code + " | ID: " + response.getId());
         } catch (Exception e) {
             System.err.println("❌ MAİL HATASI: " + e.getMessage());
         }
@@ -244,22 +244,23 @@ public class AuthService {
 
     private void sendPasswordResetEmail(UserEntity user, String token) {
         try {
-            MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-            helper.setFrom("laraminakaradenizz@gmail.com", "OTIGO Destek");
-            helper.setTo(user.getEmail());
-            helper.setSubject("Şifre Sıfırlama - Otigo");
+            String resetLink = "otigo://reset-password?token=" + token;
 
-            String mailContent = "Merhaba " + user.getFirstname() + ",\n\n" +
-                    "Şifre sıfırlama talebinde bulundunuz.\n\n" +
-                    "Şifre sıfırlama token'ınız: " + token + "\n\n" +
-                    "Bu token 15 dakika geçerlidir.\n\n" +
-                    "Eğer bu talebi siz yapmadıysanız bu maili görmezden gelin.\n\n" +
-                    "Sevgiler,\nOTIGO Ekibi";
+            CreateEmailOptions params = CreateEmailOptions.builder()
+                    .from("OTIGO Destek <onboarding@resend.dev>")
+                    .to(user.getEmail())
+                    .subject("Şifre Sıfırlama - Otigo")
+                    .text("Merhaba " + user.getFirstname() + ",\n\n" +
+                          "Şifre sıfırlama talebinde bulundunuz.\n\n" +
+                          "Şifrenizi sıfırlamak için aşağıdaki linke tıklayın:\n" +
+                          resetLink + "\n\n" +
+                          "Bu link 15 dakika geçerlidir.\n\n" +
+                          "Eğer bu talebi siz yapmadıysanız bu maili görmezden gelin.\n\n" +
+                          "Sevgiler,\nOTIGO Ekibi")
+                    .build();
 
-            helper.setText(mailContent, false);
-            mailSender.send(message);
-            System.out.println("✅ ŞİFRE SIFIRLAMA MAILI GÖNDERİLDİ: " + user.getEmail());
+            CreateEmailResponse response = resend.emails().send(params);
+            System.out.println("✅ ŞİFRE SIFIRLAMA MAILI GÖNDERİLDİ: " + user.getEmail() + " | ID: " + response.getId());
         } catch (Exception e) {
             System.err.println("❌ MAİL HATASI: " + e.getMessage());
         }

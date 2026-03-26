@@ -34,7 +34,10 @@ public class SecurityConfig {
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/auth/**").permitAll()
+                // SENİN CONTROLLER YAPINA UYGUN KRİTİK SATIR:
+                // /auth/register, /auth/login, /auth/verify gibi tüm endpointlere izni açtık.
+                .requestMatchers("/auth/**").permitAll() 
+                // Diğer tüm istekler (çocuk ekleme, skor kaydetme vb.) için hala Token şart.
                 .anyRequest().authenticated()
             )
             .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -47,9 +50,12 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of("*"));
+        // Frontend (Unity veya Web) erişimi için en esnek ayar:
+        config.setAllowedOrigins(List.of("*")); 
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
+        config.setAllowCredentials(false); // Origins "*" iken false olmalı.
+        
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.setCorsConfigurations(Collections.singletonMap("/**", config));
         return source;

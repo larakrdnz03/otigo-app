@@ -1,6 +1,6 @@
-// MessageService.java
 package com.otigo.auth_api.service;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -9,8 +9,9 @@ import com.otigo.auth_api.entity.UserEntity;
 import com.otigo.auth_api.repository.MessageRepository;
 import com.otigo.auth_api.repository.UserRepository;
 
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.SimpleMailMessage;
+import com.resend.Resend;
+import com.resend.services.emails.model.CreateEmailOptions;
+
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -19,14 +20,14 @@ public class MessageService {
 
     private final MessageRepository messageRepository;
     private final UserRepository userRepository;
-    private final JavaMailSender mailSender; // E-posta göndermek için
+    private final Resend resend;
 
-    public MessageService(MessageRepository messageRepository, 
+    public MessageService(MessageRepository messageRepository,
                           UserRepository userRepository,
-                          JavaMailSender mailSender) {
+                          @Value("${resend.api.key}") String resendApiKey) {
         this.messageRepository = messageRepository;
         this.userRepository = userRepository;
-        this.mailSender = mailSender;
+        this.resend = new Resend(resendApiKey);
     }
 
     @Transactional
@@ -34,7 +35,6 @@ public class MessageService {
         UserEntity receiver = userRepository.findById(receiverId)
                 .orElseThrow(() -> new RuntimeException("Alıcı bulunamadı."));
 
-        // 1. Mesajı Kaydet
         Message msg = new Message();
         msg.setSender(sender);
         msg.setReceiver(receiver);
@@ -42,7 +42,6 @@ public class MessageService {
         msg.setSentAt(LocalDateTime.now());
         Message savedMsg = messageRepository.save(msg);
 
-        // 2. Bildirim Gönder (Gereksinim 2.6)
         sendNotificationEmail(receiver, sender, content);
 
         return savedMsg;
@@ -50,17 +49,19 @@ public class MessageService {
 
     private void sendNotificationEmail(UserEntity receiver, UserEntity sender, String content) {
         try {
-            SimpleMailMessage mail = new SimpleMailMessage();
-            mail.setTo(receiver.getEmail());
-            mail.setSubject("Yeni Mesajınız Var! - Otigo");
-            mail.setText("Merhaba,\n\n" + 
-                         sender.getEmail() + " size bir mesaj gönderdi:\n\n" + 
-                         "\"" + content + "\"\n\n" +
-                         "Uygulamaya girip cevaplayabilirsiniz.");
-            
-            mailSender.send(mail);
+            CreateEmailOptions params = CreateEmailOptions.builder()
+                    .from("OTIGO Destek <onboarding@resend.dev>")
+                    .to(receiver.getEmail())
+                    .subject("Yeni Mesajınız Var! - Otigo")
+                    .text("Merhaba,\n\n" +
+                          sender.getEmail() + " size bir mesaj gönderdi:\n\n" +
+                          "\"" + content + "\"\n\n" +
+                          "Uygulamaya girip cevaplayabilirsiniz.\n\n" +
+                          "Sevgiler,\nOTIGO Ekibi")
+                    .build();
+
+            resend.emails().send(params);
         } catch (Exception e) {
-            // E-posta hatası mesajlaşmayı durdurmamalı, sadece loglayabiliriz.
             System.err.println("Bildirim e-postası gönderilemedi: " + e.getMessage());
         }
     }
