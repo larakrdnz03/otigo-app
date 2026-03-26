@@ -11,7 +11,9 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.security.config.Customizer;
 
+//import java.beans.Customizer;
 import java.util.Collections;
 import java.util.List;
 
@@ -32,12 +34,15 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+            .cors(Customizer.withDefaults())
             .csrf(csrf -> csrf.disable())
+            //http.csrf(csrf -> csrf.disable()); // POST istekleri için bu ŞART!
             .authorizeHttpRequests(auth -> auth
                 // SENİN CONTROLLER YAPINA UYGUN KRİTİK SATIR:
                 // /auth/register, /auth/login, /auth/verify gibi tüm endpointlere izni açtık.
                 .requestMatchers("/auth/**").permitAll() 
                 // Diğer tüm istekler (çocuk ekleme, skor kaydetme vb.) için hala Token şart.
+                .requestMatchers("/api/v1/**").authenticated() // API yolları kesinlikle TOKEN ister
                 .anyRequest().authenticated()
             )
             .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
