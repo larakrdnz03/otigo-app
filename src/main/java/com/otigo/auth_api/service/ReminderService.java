@@ -78,7 +78,7 @@ public class ReminderService {
             );
 
             CreateEmailOptions params = CreateEmailOptions.builder()
-                    .from("OTIGO Destek <onboarding@resend.dev>")
+                    .from("OTIGO Destek <destek@otigo.info>")
                     .to(parent.getEmail())
                     .subject("Hatırlatma: Tamamlanmamış Ödevler Var 📢")
                     .text(message)

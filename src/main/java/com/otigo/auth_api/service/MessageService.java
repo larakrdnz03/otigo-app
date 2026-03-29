@@ -50,7 +50,7 @@ public class MessageService {
     private void sendNotificationEmail(UserEntity receiver, UserEntity sender, String content) {
         try {
             CreateEmailOptions params = CreateEmailOptions.builder()
-                    .from("OTIGO Destek <onboarding@resend.dev>")
+                    .from("OTIGO Destek <destek@otigo.info>")
                     .to(receiver.getEmail())
                     .subject("Yeni Mesajınız Var! - Otigo")
                     .text("Merhaba,\n\n" +

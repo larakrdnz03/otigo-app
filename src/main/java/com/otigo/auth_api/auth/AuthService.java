@@ -226,7 +226,7 @@ public class AuthService {
     private void sendVerificationEmail(UserEntity user, String code) {
         try {
             CreateEmailOptions params = CreateEmailOptions.builder()
-                    .from("OTIGO Destek <onboarding@resend.dev>")
+                    .from("OTIGO Destek <destek@otigo.info>")
                     .to(user.getEmail())
                     .subject("Doğrulama Kodun - Otigo")
                     .text("Merhaba " + user.getFirstname() + ",\n\n" +
