@@ -2,19 +2,11 @@ package com.otigo.auth_api.dto.request;
 
 import jakarta.validation.constraints.NotNull;
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.ArrayList;
+import com.otigo.auth_api.entity.LevelResult;
 import com.otigo.auth_api.entity.enums.HelpLevel;
 
-/**
- * Mobil uygulamanın (Unity -> Android -> Backend) bir oyun bittiğinde
- * backend'e göndereceği "Oyun Sonucu" verisini taşır.
- *
- * DEĞİŞİKLİKLER (Görsel Algı Raporu için):
- * - parentHelpCount  : Veli kaç kez yardım etti (eski: sadece true/false vardı)
- * - totalTargetCount : O level'daki toplam nesne/seçim sayısı (bağımsızlık formülü için)
- *
- * Bağımsızlık Formülü:
- * bagimsizlik (%) = (1 - parentHelpCount / totalTargetCount) x 100
- */
 public class CreateActivityResultRequest {
 
     @NotNull(message = "Aktivite ID boş olamaz")
@@ -24,45 +16,15 @@ public class CreateActivityResultRequest {
     private Integer score;
 
     private int durationSeconds;
-
     private int mistakesMade;
-
-    // --- ESKİ ALAN (geriye dönük uyumluluk için bırakıldı) ---
     private boolean parentHelped;
-
     private HelpLevel parentHelpLevel;
-
     private String parentFeedback;
-
     private LocalDateTime playedAt;
-
-    /**
-     * Bu oyunun oynandığı andaki seviye.
-     * Unity tarafından gönderilir.
-     * Örn: Çocuk 3. level'daysa levelPlayed = 3
-     */
     private int levelPlayed = 1;
-
-    // --- YENİ ALANLAR ---
-
-    /**
-     * Veli kaç kez yardım etti?
-     * Veli uygulamadaki "Yardım Ettim" butonuna her bastığında bu sayı 1 artar.
-     * Örnek: Level'da 4 nesne var, veli 2 tanesinde yardım etti → parentHelpCount = 2
-     */
     private int parentHelpCount = 0;
-
-    /**
-     * O level'daki toplam hedef sayısı.
-     * Gölge-Nesne: o level'daki nesne sayısı (Level 6 → 4)
-     * Farklı Cisim: beklenen doğru seçim sayısı (tek cevap → 1, çoklu → 2+)
-     * Doğru Nesneyi Seçme: beklenen doğru seçim sayısı
-     *
-     * Bu değer Unity tarafından gönderilir.
-     */
     private int totalTargetCount = 1;
-
-    // --- Getter ve Setter'lar ---
+    private List<LevelResult> levelResults = new ArrayList<>();
 
     public Long getActivityId() { return activityId; }
     public void setActivityId(Long activityId) { this.activityId = activityId; }
@@ -96,4 +58,7 @@ public class CreateActivityResultRequest {
 
     public int getTotalTargetCount() { return totalTargetCount; }
     public void setTotalTargetCount(int totalTargetCount) { this.totalTargetCount = totalTargetCount; }
+
+    public List<LevelResult> getLevelResults() { return levelResults; }
+    public void setLevelResults(List<LevelResult> levelResults) { this.levelResults = levelResults; }
 }

@@ -45,25 +45,23 @@ public class ActivityResultService {
         newResult.setDurationSeconds(request.getDurationSeconds());
         newResult.setMistakesMade(request.getMistakesMade());
         newResult.setParentHelped(request.isParentHelped());
-        //newResult.setParentHelpLevel(request.getParentHelpLevel());
-        //newResult.setParentFeedback(request.getParentFeedback());
         newResult.setParentHelpCount(request.getParentHelpCount());
         newResult.setTotalTargetCount(request.getTotalTargetCount());
-        newResult.setLevelPlayed(request.getLevelPlayed()); // Hangi level'da oynandı
+        newResult.setLevelPlayed(request.getLevelPlayed());
         newResult.setPlayedAt(
             request.getPlayedAt() != null ? request.getPlayedAt() : LocalDateTime.now()
         );
 
-        // --- BAĞIMSIZLIK SKORU HESABI ---
-        // Formül: (1 - yardımSayısı / toplamHedef) x 100
-        // Kenar durum: totalTargetCount 0 gelirse sıfıra bölme hatası önlenir
+        if (request.getLevelResults() != null && !request.getLevelResults().isEmpty()) {
+            newResult.setLevelResults(request.getLevelResults());
+        }
+
         double independenceScore = calculateIndependenceScore(
             request.getParentHelpCount(),
             request.getTotalTargetCount()
         );
         newResult.setIndependenceScore(independenceScore);
 
-        // parentHelped alanını da otomatik doldur (geriye dönük uyumluluk)
         if (request.getParentHelpCount() > 0) {
             newResult.setParentHelped(true);
         }
@@ -71,21 +69,12 @@ public class ActivityResultService {
         return activityResultRepository.save(newResult);
     }
 
-    /**
-     * Bağımsızlık yüzdesini hesaplar.
-     * Formül: (1 - parentHelpCount / totalTargetCount) x 100
-     *
-     * @param helpCount      Veli kaç kez yardım etti
-     * @param totalTargets   O level'daki toplam hedef sayısı
-     * @return 0.0 ile 100.0 arasında bağımsızlık yüzdesi
-     */
     public double calculateIndependenceScore(int helpCount, int totalTargets) {
-        if (totalTargets <= 0) return 100.0; // Hedef yoksa tam bağımsız say
-        if (helpCount <= 0) return 100.0;    // Hiç yardım almadıysa tam bağımsız
-        if (helpCount >= totalTargets) return 0.0; // Her hedefte yardım aldıysa sıfır
+        if (totalTargets <= 0) return 100.0;
+        if (helpCount <= 0) return 100.0;
+        if (helpCount >= totalTargets) return 0.0;
 
         double score = (1.0 - (double) helpCount / totalTargets) * 100.0;
-        // 0-100 arasında sınırla
         return Math.max(0.0, Math.min(100.0, score));
     }
 
