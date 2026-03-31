@@ -9,9 +9,11 @@ import org.springframework.web.bind.annotation.*;
 import com.otigo.auth_api.dto.response.ReportResponse;
 import com.otigo.auth_api.dto.response.VisualPerceptionReportDto;
 import com.otigo.auth_api.dto.response.MathSkillsReportDto;
+import com.otigo.auth_api.dto.response.MonthlyTrendDto;
 import com.otigo.auth_api.service.ReportService;
 import com.otigo.auth_api.service.VisualPerceptionReportService;
 import com.otigo.auth_api.service.MathSkillsReportService;
+import com.otigo.auth_api.service.MonthlyTrendService;
 
 @RestController
 @RequestMapping("/api/reports")
@@ -20,13 +22,16 @@ public class ReportController {
     private final ReportService reportService;
     private final VisualPerceptionReportService visualPerceptionReportService;
     private final MathSkillsReportService mathSkillsReportService;
+    private final MonthlyTrendService monthlyTrendService;
 
     public ReportController(ReportService reportService,
                             VisualPerceptionReportService visualPerceptionReportService,
-                            MathSkillsReportService mathSkillsReportService) {
+                            MathSkillsReportService mathSkillsReportService,
+                            MonthlyTrendService monthlyTrendService) {
         this.reportService = reportService;
         this.visualPerceptionReportService = visualPerceptionReportService;
         this.mathSkillsReportService = mathSkillsReportService;
+        this.monthlyTrendService = monthlyTrendService;
     }
 
     @GetMapping("/{childId}")
@@ -69,6 +74,18 @@ public class ReportController {
             MathSkillsReportDto report =
                     mathSkillsReportService.generateReport(childId);
             return ResponseEntity.ok(report);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/{childId}/monthly-trend")
+    public ResponseEntity<?> getMonthlyTrend(
+            @PathVariable Long childId,
+            Authentication authentication) {
+        try {
+            MonthlyTrendDto trend = monthlyTrendService.generateTrend(childId);
+            return ResponseEntity.ok(trend);
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
