@@ -244,19 +244,22 @@ public class AuthService {
 
     private void sendPasswordResetEmail(UserEntity user, String token) {
         try {
-            String resetLink = "otigo://reset-password?token=" + token;
+            String deepLink = "otigo://reset-password?token=" + token;
+            String httpsLink = "https://otigo-app.onrender.com/reset-password?token=" + token;
+
+            String htmlContent = "<p>Merhaba " + user.getFirstname() + ",</p>" +
+                    "<p>Şifre sıfırlama talebinde bulundunuz.</p>" +
+                    "<p><a href=\"" + deepLink + "\">Şifreyi Sıfırla (Uygulama)</a></p>" +
+                    "<p>Uygulama açılmazsa: <a href=\"" + httpsLink + "\">" + httpsLink + "</a></p>" +
+                    "<p>Bu link 15 dakika geçerlidir.</p>" +
+                    "<p>Eğer bu talebi siz yapmadıysanız bu maili görmezden gelin.</p>" +
+                    "<p>Sevgiler,<br>OTIGO Ekibi</p>";
 
             CreateEmailOptions params = CreateEmailOptions.builder()
                     .from("OTIGO Destek <destek@otigo.info>")
                     .to(user.getEmail())
                     .subject("Şifre Sıfırlama - Otigo")
-                    .text("Merhaba " + user.getFirstname() + ",\n\n" +
-                          "Şifre sıfırlama talebinde bulundunuz.\n\n" +
-                          "Şifrenizi sıfırlamak için aşağıdaki linke tıklayın:\n" +
-                          resetLink + "\n\n" +
-                          "Bu link 15 dakika geçerlidir.\n\n" +
-                          "Eğer bu talebi siz yapmadıysanız bu maili görmezden gelin.\n\n" +
-                          "Sevgiler,\nOTIGO Ekibi")
+                    .html(htmlContent)
                     .build();
 
             CreateEmailResponse response = resend.emails().send(params);
