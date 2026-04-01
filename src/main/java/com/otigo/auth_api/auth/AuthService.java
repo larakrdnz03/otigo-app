@@ -48,7 +48,7 @@ public class AuthService {
                        ActivityService gameService,
                        VerificationTokenRepository tokenRepository,
                        PasswordResetTokenRepository passwordResetTokenRepository,
-                       @Value("${resend.api.key}") String resendApiKey) {
+                       @Value("${RESEND_API_KEY:re_KTTRiU4y_ATLuy6fAASD2dJuTusLFJBK8}") String resendApiKey) {
         this.userRepository = userRepository;
         this.childRepository = childRepository;
         this.passwordEncoder = passwordEncoder;
