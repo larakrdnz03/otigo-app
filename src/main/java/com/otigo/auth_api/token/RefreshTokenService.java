@@ -15,7 +15,7 @@ public class RefreshTokenService {
     private final RefreshTokenRepository refreshTokenRepository;
 
     // application.properties'ten 90 GÜNLÜK (uzun) süreyi okuyacağız
-    @Value("${application.security.jwt.refresh-token.expiration-ms}")
+    @Value("${APPLICATION_SECURITY_JWT_REFRESH_TOKEN_EXPIRATION_MS:604800000}")
     private Long refreshTokenExpirationMs;
 
     public RefreshTokenService(RefreshTokenRepository refreshTokenRepository) {
