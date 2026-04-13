@@ -250,8 +250,8 @@ public class AuthService {
             String htmlContent = "<p>Merhaba " + user.getFirstname() + ",</p>" +
                     "<p>Şifre sıfırlama talebinde bulundunuz.</p>" +
                     "<p><a href=\"" + deepLink + "\">Şifrenizi sıfırlamak için buraya tıklayın</a></p>"  +
-                    "<p>Uygulama açılmazsa: <a href=\"" + httpsLink + "\">" + httpsLink + "</a></p>" +
-                    "<p>Bu link 15 dakika geçerlidir.</p>" +
+                   // "<p>Uygulama açılmazsa: <a href=\"" + httpsLink + "\">" + httpsLink + "</a></p>" +
+                    //"<p>Bu link 15 dakika geçerlidir.</p>" +
                     "<p>Eğer bu talebi siz yapmadıysanız bu maili görmezden gelin.</p>" +
                     "<p>Sevgiler,<br>OTIGO Ekibi</p>";
 
