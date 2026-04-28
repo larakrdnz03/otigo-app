@@ -20,14 +20,14 @@ public class MessageService {
 
     private final MessageRepository messageRepository;
     private final UserRepository userRepository;
-    private final Resend resend;
+    private final NotificationService notificationService;
 
     public MessageService(MessageRepository messageRepository,
                           UserRepository userRepository,
-                          @Value("${resend.api.key}") String resendApiKey) {
+                          NotificationService notificationService) {
         this.messageRepository = messageRepository;
         this.userRepository = userRepository;
-        this.resend = new Resend(resendApiKey);
+        this.notificationService = notificationService;
     }
 
     @Transactional
@@ -42,28 +42,15 @@ public class MessageService {
         msg.setSentAt(LocalDateTime.now());
         Message savedMsg = messageRepository.save(msg);
 
-        sendNotificationEmail(receiver, sender, content);
+        // Push notification gönder
+        String senderName = sender.getFirstname() != null ? sender.getFirstname() : sender.getEmail();
+        notificationService.sendNotification(
+                receiver,
+                "Yeni Mesaj - " + senderName,
+                content.length() > 50 ? content.substring(0, 50) + "..." : content
+        );
 
         return savedMsg;
-    }
-
-    private void sendNotificationEmail(UserEntity receiver, UserEntity sender, String content) {
-        try {
-            CreateEmailOptions params = CreateEmailOptions.builder()
-                    .from("OTIGO Destek <destek@otigo.info>")
-                    .to(receiver.getEmail())
-                    .subject("Yeni Mesajınız Var! - Otigo")
-                    .text("Merhaba,\n\n" +
-                          sender.getEmail() + " size bir mesaj gönderdi:\n\n" +
-                          "\"" + content + "\"\n\n" +
-                          "Uygulamaya girip cevaplayabilirsiniz.\n\n" +
-                          "Sevgiler,\nOTIGO Ekibi")
-                    .build();
-
-            resend.emails().send(params);
-        } catch (Exception e) {
-            System.err.println("Bildirim e-postası gönderilemedi: " + e.getMessage());
-        }
     }
 
     public List<Message> getChatHistory(Long currentUserId, Long otherUserId) {
