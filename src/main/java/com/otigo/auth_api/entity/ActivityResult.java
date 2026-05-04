@@ -24,7 +24,7 @@ public class ActivityResult {
     @JsonIgnore
     private Child child;
 
-    private Integer score;
+    //private Integer score;
     private int durationSeconds;
     private int mistakesMade;
     
@@ -63,8 +63,8 @@ public class ActivityResult {
     public Child getChild() { return child; }
     public void setChild(Child child) { this.child = child; }
 
-    public Integer getScore() { return score; }
-    public void setScore(Integer score) { this.score = score; }
+    //public Integer getScore() { return score; }
+    //public void setScore(Integer score) { this.score = score; }
 
     public int getDurationSeconds() { return durationSeconds; }
     public void setDurationSeconds(int durationSeconds) { this.durationSeconds = durationSeconds; }

@@ -41,7 +41,7 @@ public class ActivityResultService {
         ActivityResult newResult = new ActivityResult();
         newResult.setChild(child);
         newResult.setActivity(activity);
-        newResult.setScore(request.getScore());
+        //newResult.setScore(request.getScore());
         newResult.setDurationSeconds(request.getDurationSeconds());
         newResult.setMistakesMade(request.getMistakesMade());
         newResult.setParentHelped(request.isParentHelped());

@@ -17,13 +17,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * "Matematiksel ve Problem Çözme Becerileri" kategorisinin raporunu üretir.
- *
- * Kategori oyunları:
- * - Sayı-Nesne Eşleştirme
- * - Yapboz
- */
 @Service
 public class MathSkillsReportService {
 
@@ -105,8 +98,7 @@ public class MathSkillsReportService {
                     result.getParentHelpCount(),
                     result.getTotalTargetCount(),
                     result.getIndependenceScore(),
-                    result.getDurationSeconds(),
-                    result.getScore()
+                    result.getDurationSeconds()
             );
             session.setRetryCount(retryCount);
             sessions.add(session);
