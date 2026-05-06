@@ -7,8 +7,10 @@ public class ConnectionResponseDto {
 
     private Long id;
     private String status;
+    private Long expertId;
     private String expertEmail;
     private String expertName;
+    private Long parentId;
     private String parentEmail;
     private String parentName;
     private LocalDateTime createdAt;
@@ -20,8 +22,10 @@ public class ConnectionResponseDto {
         ConnectionResponseDto dto = new ConnectionResponseDto();
         dto.setId(connection.getId());
         dto.setStatus(connection.getStatus().name());
+        dto.setExpertId(connection.getExpert().getId());
         dto.setExpertEmail(connection.getExpert().getEmail());
         dto.setExpertName(connection.getExpert().getFirstname() + " " + connection.getExpert().getLastname());
+        dto.setParentId(connection.getParent().getId());
         dto.setParentEmail(connection.getParent().getEmail());
         dto.setParentName(connection.getParent().getFirstname() + " " + connection.getParent().getLastname());
         dto.setCreatedAt(connection.getCreatedAt());
@@ -35,11 +39,17 @@ public class ConnectionResponseDto {
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
 
+    public Long getExpertId() { return expertId; }
+    public void setExpertId(Long expertId) { this.expertId = expertId; }
+
     public String getExpertEmail() { return expertEmail; }
     public void setExpertEmail(String expertEmail) { this.expertEmail = expertEmail; }
 
     public String getExpertName() { return expertName; }
     public void setExpertName(String expertName) { this.expertName = expertName; }
+
+    public Long getParentId() { return parentId; }
+    public void setParentId(Long parentId) { this.parentId = parentId; }
 
     public String getParentEmail() { return parentEmail; }
     public void setParentEmail(String parentEmail) { this.parentEmail = parentEmail; }
