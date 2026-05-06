@@ -111,6 +111,14 @@ public class AuthService {
 
         user.setRole(request.getRole());
         user.setStatus(AccountStatus.ACTIVE);
+
+        // İsim/soyisim güncelleme
+        if (request.getFirstName() != null) user.setFirstname(request.getFirstName());
+        if (request.getLastName() != null) user.setLastname(request.getLastName());
+
+        // Veli modu şifresi
+        if (request.getParentPattern() != null) user.setParentPattern(request.getParentPattern());
+
         userRepository.save(user);
 
         tokenData.setConfirmedAt(LocalDateTime.now());
@@ -244,22 +252,14 @@ public class AuthService {
 
     private void sendPasswordResetEmail(UserEntity user, String token) {
         try {
-            //String deepLink = "otigo://reset-password?token=" + token;
-            String httpsLink = "https://otigo-app.onrender.com/reset-password?token=" + token;
-
-            /*String htmlContent = "<p>Merhaba " + user.getFirstname() + ",</p>" +
-                    "<p>Şifre sıfırlama talebinde bulundunuz.</p>" +
-                    "<p><a href=\"" + deepLink + "\">Şifrenizi sıfırlamak için buraya tıklayın</a></p>"  +
-                   // "<p>Uygulama açılmazsa: <a href=\"" + httpsLink + "\">" + httpsLink + "</a></p>" +
-                    //"<p>Bu link 15 dakika geçerlidir.</p>" +
-                    "<p>Eğer bu talebi siz yapmadıysanız bu maili görmezden gelin.</p>" +
-                    "<p>Sevgiler,<br>OTIGO Ekibi</p>";*/
+            String deepLink = "otigo://reset-password?token=" + token;
 
             String htmlContent = "<p>Merhaba " + user.getFirstname() + ",</p>" +
-                   "<p>Şifre sıfırlama talebinde bulundunuz.</p>" +
-                   "<p><a href=\"" + httpsLink + "\">Şifrenizi sıfırlamak için buraya tıklayın</a></p>" +
-                   "<p>Eğer bu talebi siz yapmadıysanız bu maili görmezden gelin.</p>" +
-                   "<p>Sevgiler,<br>OTIGO Ekibi</p>";        
+                    "<p>Şifre sıfırlama talebinde bulundunuz.</p>" +
+                    "<p><a href=\"" + deepLink + "\">Şifrenizi sıfırlamak için buraya tıklayın</a></p>" +
+                    "<p>Bu link 15 dakika geçerlidir.</p>" +
+                    "<p>Eğer bu talebi siz yapmadıysanız bu maili görmezden gelin.</p>" +
+                    "<p>Sevgiler,<br>OTIGO Ekibi</p>";
 
             CreateEmailOptions params = CreateEmailOptions.builder()
                     .from("OTIGO Destek <destek@otigo.info>")
