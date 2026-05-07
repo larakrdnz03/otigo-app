@@ -1,7 +1,7 @@
 package com.otigo.auth_api.entity;
 
 import jakarta.persistence.*;
-import java.util.ArrayList; // Listeler için
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -18,43 +18,32 @@ public class Child {
     private String name;
     private int age;
 
-    // ✅ DOĞRU: mappedBy = "trackedChildren" (Expert tarafındaki değişkene bakıyor)
+    @JsonIgnore
     @ManyToMany(mappedBy = "trackedChildren")
-    private Set<Expert> experts = new HashSet<>(); 
+    private Set<Expert> experts = new HashSet<>();
 
-    // Çocuğun Velisi (Parent) - İlişkinin Sahibi Burası (FK burada)
-    @JsonIgnore // BUNU EKLE
+    @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "parent_id", nullable = false)
     private UserEntity parent;
 
-    // --- LİSTELER (HEPSİNDE mappedBy KULLANILMALI) ---
-
-    // 1. Tavsiyeler (Düzeltildi)
+    @JsonIgnore
     @OneToMany(mappedBy = "child", fetch = FetchType.LAZY)
-    private List<ExpertRecommendation> recommendations = new ArrayList<>(); 
+    private List<ExpertRecommendation> recommendations = new ArrayList<>();
 
-    // 2. Oyun Sonuçları (Skorlar)
+    @JsonIgnore
     @OneToMany(mappedBy = "child", fetch = FetchType.LAZY)
     private List<ActivityResult> activityResults = new ArrayList<>();
 
-    // 3. Oyun Durumları (Seviyeler)
+    @JsonIgnore
     @OneToMany(mappedBy = "child", fetch = FetchType.LAZY)
     private List<Activity> activities = new ArrayList<>();
 
-    /*  4. Uzman Gözlemleri
-    @OneToMany(mappedBy = "child", fetch = FetchType.LAZY)
-    private List<Observation> observations = new ArrayList<>();*/
-
-    // 5. Anketler
+    @JsonIgnore
     @OneToMany(mappedBy = "child", fetch = FetchType.LAZY)
     private List<SymptomSurvey> surveys = new ArrayList<>();
 
-
-    public Child() {
-    }
-
-    // --- Getter ve Setterlar ---
+    public Child() {}
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -79,9 +68,6 @@ public class Child {
 
     public List<Activity> getActivities() { return activities; }
     public void setActivities(List<Activity> activities) { this.activities = activities; }
-
-    //public List<Observation> getObservations() { return observations; }
-    //public void setObservations(List<Observation> observations) { this.observations = observations; }
 
     public List<SymptomSurvey> getSurveys() { return surveys; }
     public void setSurveys(List<SymptomSurvey> surveys) { this.surveys = surveys; }
