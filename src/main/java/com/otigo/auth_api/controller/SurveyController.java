@@ -16,9 +16,11 @@ import com.otigo.auth_api.entity.UserEntity;
 import com.otigo.auth_api.entity.enums.UserRole;
 import com.otigo.auth_api.repository.ChildRepository;
 import com.otigo.auth_api.repository.ExpertParentConnectionRepository;
+import com.otigo.auth_api.service.NotificationService;
 import com.otigo.auth_api.service.SurveyService;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/surveys")
@@ -27,17 +29,21 @@ public class SurveyController {
     private final SurveyService surveyService;
     private final ChildRepository childRepository;
     private final ExpertParentConnectionRepository connectionRepository;
+    private final NotificationService notificationService;
 
     public SurveyController(SurveyService surveyService,
                             ChildRepository childRepository,
-                            ExpertParentConnectionRepository connectionRepository) {
+                            ExpertParentConnectionRepository connectionRepository,
+                            NotificationService notificationService) {
         this.surveyService = surveyService;
         this.childRepository = childRepository;
         this.connectionRepository = connectionRepository;
+        this.notificationService = notificationService;
     }
 
     /**
-     * Veli tarafından doldurulan yeni bir belirti anketini kaydeder.
+     * Veli yeni anket kaydeder.
+     * POST /api/v1/surveys/child/{childId}
      */
     @PostMapping("/child/{childId}")
     public ResponseEntity<?> saveSymptomSurvey(
@@ -57,8 +63,47 @@ public class SurveyController {
     }
 
     /**
-     * Bir çocuğa ait tüm anket sonuçlarını listeler.
-     * Veli kendi çocuğuna, uzman bağlı olduğu velinin çocuğuna erişebilir.
+     * Veli mevcut anketi günceller, bağlı uzmana bildirim gider.
+     * PUT /api/v1/surveys/{surveyId}
+     * Body: { "surveyResultsJson": "..." }
+     */
+    @PutMapping("/{surveyId}")
+    public ResponseEntity<?> updateSurvey(
+            @PathVariable Long surveyId,
+            @RequestBody Map<String, String> body,
+            Authentication authentication) {
+
+        try {
+            UserEntity parentUser = (UserEntity) authentication.getPrincipal();
+            String newJson = body.get("surveyResultsJson");
+
+            SymptomSurvey updated = surveyService.updateSurvey(parentUser, surveyId, newJson);
+
+            // Bağlı uzmanlara bildirim gönder
+            Child child = updated.getChild();
+            List<ExpertParentConnection> connections = connectionRepository
+                    .findByParentAndStatus(parentUser, ConnectionStatus.ACCEPTED);
+
+            String parentName = parentUser.getFirstname() != null ? parentUser.getFirstname() : "Veli";
+            for (ExpertParentConnection conn : connections) {
+                notificationService.sendNotification(
+                        conn.getExpert(),
+                        "Belirti Formu Güncellendi",
+                        parentName + ", " + child.getName() + " için belirti formunu güncelledi."
+                );
+            }
+
+            return ResponseEntity.ok(updated);
+        } catch (AccessDeniedException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    /**
+     * Çocuğun anketlerini listeler.
+     * GET /api/v1/surveys/child/{childId}
      */
     @GetMapping("/child/{childId}")
     public ResponseEntity<?> getSurveysForChild(
@@ -71,7 +116,6 @@ public class SurveyController {
             Child child = childRepository.findById(childId)
                     .orElseThrow(() -> new RuntimeException("Çocuk bulunamadı."));
 
-            // Veli ise kendi çocuğu mu kontrol et
             if (currentUser.getRole() == UserRole.VELI) {
                 if (!child.getParent().getId().equals(currentUser.getId())) {
                     return ResponseEntity.status(HttpStatus.FORBIDDEN)
@@ -79,7 +123,6 @@ public class SurveyController {
                 }
             }
 
-            // Uzman ise bağlı olduğu velinin çocuğu mu kontrol et
             if (currentUser.getRole() == UserRole.UZMAN) {
                 UserEntity parent = child.getParent();
                 boolean isConnected = connectionRepository
