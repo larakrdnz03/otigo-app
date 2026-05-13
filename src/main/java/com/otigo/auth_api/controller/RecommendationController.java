@@ -85,7 +85,7 @@ public class RecommendationController {
             notificationService.sendNotification(
                     parent,
                     "Yeni Ödev",
-                    expertName + " " + child.getName() + " için yeni bir ödev atadı: " + activity.getName()
+                    expertName + ", " + child.getName() + " için yeni bir ödev atadı: " + activity.getName()
             );
 
             return ResponseEntity.status(HttpStatus.CREATED).body(Map.of(
