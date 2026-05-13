@@ -15,6 +15,7 @@ import com.otigo.auth_api.repository.ActivityRepository;
 import com.otigo.auth_api.repository.ChildRepository;
 import com.otigo.auth_api.repository.ExpertParentConnectionRepository;
 import com.otigo.auth_api.repository.ExpertRecommendationRepository;
+import com.otigo.auth_api.service.NotificationService;
 
 import java.util.List;
 import java.util.Map;
@@ -27,23 +28,21 @@ public class RecommendationController {
     private final ChildRepository childRepository;
     private final ActivityRepository activityRepository;
     private final ExpertParentConnectionRepository connectionRepository;
+    private final NotificationService notificationService;
 
     public RecommendationController(
             ExpertRecommendationRepository recommendationRepository,
             ChildRepository childRepository,
             ActivityRepository activityRepository,
-            ExpertParentConnectionRepository connectionRepository) {
+            ExpertParentConnectionRepository connectionRepository,
+            NotificationService notificationService) {
         this.recommendationRepository = recommendationRepository;
         this.childRepository = childRepository;
         this.activityRepository = activityRepository;
         this.connectionRepository = connectionRepository;
+        this.notificationService = notificationService;
     }
 
-    /**
-     * Uzman ödev verir.
-     * POST /api/v1/recommendations
-     * Body: { "childId": 1, "activityId": 5, "targetLevel": 3 }
-     */
     @PostMapping
     public ResponseEntity<?> createRecommendation(
             @RequestBody Map<String, Object> body,
@@ -58,7 +57,6 @@ public class RecommendationController {
             Child child = childRepository.findById(childId)
                     .orElseThrow(() -> new RuntimeException("Çocuk bulunamadı."));
 
-            // Uzman bu veliye bağlı mı kontrol et
             UserEntity parent = child.getParent();
             boolean isConnected = connectionRepository
                     .findByExpertAndParent(expert, parent)
@@ -81,6 +79,15 @@ public class RecommendationController {
             recommendation.setCompleted(false);
 
             ExpertRecommendation saved = recommendationRepository.save(recommendation);
+
+            // Veliye push notification gönder
+            String expertName = expert.getFirstname() != null ? expert.getFirstname() : "Uzman";
+            notificationService.sendNotification(
+                    parent,
+                    "Yeni Ödev",
+                    expertName + " " + child.getName() + " için yeni bir ödev atadı: " + activity.getName()
+            );
+
             return ResponseEntity.status(HttpStatus.CREATED).body(Map.of(
                     "id", saved.getId(),
                     "childId", child.getId(),
@@ -97,10 +104,6 @@ public class RecommendationController {
         }
     }
 
-    /**
-     * Çocuğun ödevlerini listeler (veli veya uzman görebilir).
-     * GET /api/v1/recommendations/child/{childId}
-     */
     @GetMapping("/child/{childId}")
     public ResponseEntity<?> getChildRecommendations(
             @PathVariable Long childId,
@@ -128,10 +131,6 @@ public class RecommendationController {
         }
     }
 
-    /**
-     * Uzmanın verdiği tüm ödevler.
-     * GET /api/v1/recommendations/my-assignments
-     */
     @GetMapping("/my-assignments")
     public ResponseEntity<?> getMyAssignments(Authentication authentication) {
         UserEntity expert = (UserEntity) authentication.getPrincipal();
