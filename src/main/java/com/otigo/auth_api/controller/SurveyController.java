@@ -8,8 +8,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import com.otigo.auth_api.dto.request.CreateSymptomSurveyRequest;
+import com.otigo.auth_api.dto.response.SurveyResponseDto;
 import com.otigo.auth_api.entity.Child;
-import com.otigo.auth_api.entity.ExpertParentConnection;
 import com.otigo.auth_api.entity.ExpertParentConnection.ConnectionStatus;
 import com.otigo.auth_api.entity.SymptomSurvey;
 import com.otigo.auth_api.entity.UserEntity;
@@ -21,6 +21,7 @@ import com.otigo.auth_api.service.SurveyService;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/v1/surveys")
@@ -41,10 +42,6 @@ public class SurveyController {
         this.notificationService = notificationService;
     }
 
-    /**
-     * Veli yeni anket kaydeder.
-     * POST /api/v1/surveys/child/{childId}
-     */
     @PostMapping("/child/{childId}")
     public ResponseEntity<?> saveSymptomSurvey(
             @PathVariable Long childId,
@@ -54,7 +51,7 @@ public class SurveyController {
         try {
             UserEntity parentUser = (UserEntity) authentication.getPrincipal();
             SymptomSurvey savedSurvey = surveyService.saveSurvey(parentUser, childId, request);
-            return ResponseEntity.status(HttpStatus.CREATED).body(savedSurvey);
+            return ResponseEntity.status(HttpStatus.CREATED).body(SurveyResponseDto.from(savedSurvey));
         } catch (AccessDeniedException e) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
         } catch (RuntimeException e) {
@@ -62,11 +59,6 @@ public class SurveyController {
         }
     }
 
-    /**
-     * Veli mevcut anketi günceller, bağlı uzmana bildirim gider.
-     * PUT /api/v1/surveys/{surveyId}
-     * Body: { "surveyResultsJson": "..." }
-     */
     @PutMapping("/{surveyId}")
     public ResponseEntity<?> updateSurvey(
             @PathVariable Long surveyId,
@@ -79,13 +71,11 @@ public class SurveyController {
 
             SymptomSurvey updated = surveyService.updateSurvey(parentUser, surveyId, newJson);
 
-            // Bağlı uzmanlara bildirim gönder
             Child child = updated.getChild();
-            List<ExpertParentConnection> connections = connectionRepository
-                    .findByParentAndStatus(parentUser, ConnectionStatus.ACCEPTED);
+            var connections = connectionRepository.findByParentAndStatus(parentUser, ConnectionStatus.ACCEPTED);
 
             String parentName = parentUser.getFirstname() != null ? parentUser.getFirstname() : "Veli";
-            for (ExpertParentConnection conn : connections) {
+            for (var conn : connections) {
                 notificationService.sendNotification(
                         conn.getExpert(),
                         "Belirti Formu Güncellendi",
@@ -93,7 +83,7 @@ public class SurveyController {
                 );
             }
 
-            return ResponseEntity.ok(updated);
+            return ResponseEntity.ok(SurveyResponseDto.from(updated));
         } catch (AccessDeniedException e) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
         } catch (RuntimeException e) {
@@ -101,10 +91,6 @@ public class SurveyController {
         }
     }
 
-    /**
-     * Çocuğun anketlerini listeler.
-     * GET /api/v1/surveys/child/{childId}
-     */
     @GetMapping("/child/{childId}")
     public ResponseEntity<?> getSurveysForChild(
             @PathVariable Long childId,
@@ -136,7 +122,11 @@ public class SurveyController {
                 }
             }
 
-            List<SymptomSurvey> surveys = surveyService.getSurveysForChild(childId);
+            List<SurveyResponseDto> surveys = surveyService.getSurveysForChild(childId)
+                    .stream()
+                    .map(SurveyResponseDto::from)
+                    .collect(Collectors.toList());
+
             return ResponseEntity.ok(surveys);
 
         } catch (RuntimeException e) {
