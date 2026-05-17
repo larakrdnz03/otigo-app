@@ -21,4 +21,6 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
     
     // Okunmamış mesajları getir (Bildirim için)
     List<Message> findByReceiverIdAndIsReadFalse(Long receiverId);
+
+    List<Message> findBySenderIdOrReceiverId(Long senderId, Long receiverId);
 }
