@@ -22,7 +22,9 @@ import com.otigo.auth_api.service.ReportService;
 import com.otigo.auth_api.service.VisualPerceptionReportService;
 import com.otigo.auth_api.service.MathSkillsReportService;
 import com.otigo.auth_api.service.MotorSkillsReportService;
+import com.otigo.auth_api.service.LanguageSkillsReportService;
 import com.otigo.auth_api.service.MonthlyTrendService;
+import com.otigo.auth_api.dto.response.LanguageSkillsReportDto;
 
 @RestController
 @RequestMapping("/api/reports")
@@ -32,6 +34,7 @@ public class ReportController {
     private final VisualPerceptionReportService visualPerceptionReportService;
     private final MathSkillsReportService mathSkillsReportService;
     private final MotorSkillsReportService motorSkillsReportService;
+    private final LanguageSkillsReportService languageSkillsReportService;
     private final MonthlyTrendService monthlyTrendService;
     private final ChildRepository childRepository;
     private final ExpertParentConnectionRepository connectionRepository;
@@ -40,6 +43,7 @@ public class ReportController {
                             VisualPerceptionReportService visualPerceptionReportService,
                             MathSkillsReportService mathSkillsReportService,
                             MotorSkillsReportService motorSkillsReportService,
+                            LanguageSkillsReportService languageSkillsReportService,
                             MonthlyTrendService monthlyTrendService,
                             ChildRepository childRepository,
                             ExpertParentConnectionRepository connectionRepository) {
@@ -47,6 +51,7 @@ public class ReportController {
         this.visualPerceptionReportService = visualPerceptionReportService;
         this.mathSkillsReportService = mathSkillsReportService;
         this.motorSkillsReportService = motorSkillsReportService;
+        this.languageSkillsReportService = languageSkillsReportService;
         this.monthlyTrendService = monthlyTrendService;
         this.childRepository = childRepository;
         this.connectionRepository = connectionRepository;
@@ -154,8 +159,24 @@ public class ReportController {
         }
     }
 
-    @GetMapping("/{childId}/monthly-trend")
-    public ResponseEntity<?> getMonthlyTrend(
+    @GetMapping("/{childId}/language-skills")
+    public ResponseEntity<?> getLanguageSkillsReport(
+            @PathVariable Long childId,
+            Authentication authentication) {
+        try {
+            UserEntity user = (UserEntity) authentication.getPrincipal();
+            Child child = childRepository.findById(childId)
+                    .orElseThrow(() -> new RuntimeException("Çocuk bulunamadı."));
+            if (!hasAccess(user, child)) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Bu rapora erişim yetkiniz yok.");
+            }
+            return ResponseEntity.ok(languageSkillsReportService.generateReport(childId));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/{childId}/monthly-trend")    public ResponseEntity<?> getMonthlyTrend(
             @PathVariable Long childId,
             Authentication authentication) {
         try {
