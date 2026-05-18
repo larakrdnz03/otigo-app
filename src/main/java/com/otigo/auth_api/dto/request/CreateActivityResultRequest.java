@@ -12,9 +12,6 @@ public class CreateActivityResultRequest {
     @NotNull(message = "Aktivite ID boş olamaz")
     private Long activityId;
 
-    @NotNull(message = "Skor boş olamaz")
-    private Integer score;
-
     private int durationSeconds;
     private int mistakesMade;
     private boolean parentHelped;
@@ -28,9 +25,6 @@ public class CreateActivityResultRequest {
 
     public Long getActivityId() { return activityId; }
     public void setActivityId(Long activityId) { this.activityId = activityId; }
-
-    //public Integer getScore() { return score; }
-    //public void setScore(Integer score) { this.score = score; }
 
     public int getDurationSeconds() { return durationSeconds; }
     public void setDurationSeconds(int durationSeconds) { this.durationSeconds = durationSeconds; }
