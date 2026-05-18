@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 import com.otigo.auth_api.dto.response.ReportResponse;
 import com.otigo.auth_api.dto.response.VisualPerceptionReportDto;
 import com.otigo.auth_api.dto.response.MathSkillsReportDto;
+import com.otigo.auth_api.dto.response.MotorSkillsReportDto;
 import com.otigo.auth_api.dto.response.MonthlyTrendDto;
 import com.otigo.auth_api.entity.Child;
 import com.otigo.auth_api.entity.ExpertParentConnection.ConnectionStatus;
@@ -20,6 +21,7 @@ import com.otigo.auth_api.repository.ExpertParentConnectionRepository;
 import com.otigo.auth_api.service.ReportService;
 import com.otigo.auth_api.service.VisualPerceptionReportService;
 import com.otigo.auth_api.service.MathSkillsReportService;
+import com.otigo.auth_api.service.MotorSkillsReportService;
 import com.otigo.auth_api.service.MonthlyTrendService;
 
 @RestController
@@ -29,6 +31,7 @@ public class ReportController {
     private final ReportService reportService;
     private final VisualPerceptionReportService visualPerceptionReportService;
     private final MathSkillsReportService mathSkillsReportService;
+    private final MotorSkillsReportService motorSkillsReportService;
     private final MonthlyTrendService monthlyTrendService;
     private final ChildRepository childRepository;
     private final ExpertParentConnectionRepository connectionRepository;
@@ -36,22 +39,19 @@ public class ReportController {
     public ReportController(ReportService reportService,
                             VisualPerceptionReportService visualPerceptionReportService,
                             MathSkillsReportService mathSkillsReportService,
+                            MotorSkillsReportService motorSkillsReportService,
                             MonthlyTrendService monthlyTrendService,
                             ChildRepository childRepository,
                             ExpertParentConnectionRepository connectionRepository) {
         this.reportService = reportService;
         this.visualPerceptionReportService = visualPerceptionReportService;
         this.mathSkillsReportService = mathSkillsReportService;
+        this.motorSkillsReportService = motorSkillsReportService;
         this.monthlyTrendService = monthlyTrendService;
         this.childRepository = childRepository;
         this.connectionRepository = connectionRepository;
     }
 
-    /**
-     * Kullanıcının bu çocuğa erişim yetkisi var mı kontrol eder.
-     * Veli: kendi çocuğu olmalı
-     * Uzman: bağlı olduğu velinin çocuğu olmalı
-     */
     private boolean hasAccess(UserEntity user, Child child) {
         if (user.getRole() == UserRole.VELI) {
             return child.getParent().getId().equals(user.getId());
@@ -76,8 +76,7 @@ public class ReportController {
             if (!hasAccess(user, child)) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Bu rapora erişim yetkiniz yok.");
             }
-            ReportResponse response = reportService.generateReport(childId);
-            return ResponseEntity.ok(response);
+            return ResponseEntity.ok(reportService.generateReport(childId));
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
@@ -115,8 +114,7 @@ public class ReportController {
             if (!hasAccess(user, child)) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Bu rapora erişim yetkiniz yok.");
             }
-            VisualPerceptionReportDto report = visualPerceptionReportService.generateReport(childId);
-            return ResponseEntity.ok(report);
+            return ResponseEntity.ok(visualPerceptionReportService.generateReport(childId));
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
@@ -133,8 +131,24 @@ public class ReportController {
             if (!hasAccess(user, child)) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Bu rapora erişim yetkiniz yok.");
             }
-            MathSkillsReportDto report = mathSkillsReportService.generateReport(childId);
-            return ResponseEntity.ok(report);
+            return ResponseEntity.ok(mathSkillsReportService.generateReport(childId));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/{childId}/motor-skills")
+    public ResponseEntity<?> getMotorSkillsReport(
+            @PathVariable Long childId,
+            Authentication authentication) {
+        try {
+            UserEntity user = (UserEntity) authentication.getPrincipal();
+            Child child = childRepository.findById(childId)
+                    .orElseThrow(() -> new RuntimeException("Çocuk bulunamadı."));
+            if (!hasAccess(user, child)) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Bu rapora erişim yetkiniz yok.");
+            }
+            return ResponseEntity.ok(motorSkillsReportService.generateReport(childId));
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
@@ -151,8 +165,7 @@ public class ReportController {
             if (!hasAccess(user, child)) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Bu rapora erişim yetkiniz yok.");
             }
-            MonthlyTrendDto trend = monthlyTrendService.generateTrend(childId);
-            return ResponseEntity.ok(trend);
+            return ResponseEntity.ok(monthlyTrendService.generateTrend(childId));
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
