@@ -80,7 +80,6 @@ public class RecommendationController {
 
             ExpertRecommendation saved = recommendationRepository.save(recommendation);
 
-            // Veliye push notification gönder
             String expertName = expert.getFirstname() != null ? expert.getFirstname() : "Uzman";
             notificationService.sendNotification(
                     parent,
@@ -150,5 +149,53 @@ public class RecommendationController {
         )).toList();
 
         return ResponseEntity.ok(result);
+    }
+
+    /**
+     * Ödevi tamamlandı olarak işaretle.
+     * PUT /api/v1/recommendations/{id}/complete
+     */
+    @PutMapping("/{id}/complete")
+    public ResponseEntity<?> completeRecommendation(
+            @PathVariable Long id,
+            Authentication authentication) {
+        try {
+            ExpertRecommendation recommendation = recommendationRepository.findById(id)
+                    .orElseThrow(() -> new RuntimeException("Ödev bulunamadı."));
+
+            recommendation.setCompleted(true);
+            recommendationRepository.save(recommendation);
+
+            return ResponseEntity.ok("Ödev tamamlandı olarak işaretlendi.");
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    /**
+     * Uzman ödevi siler.
+     * DELETE /api/v1/recommendations/{id}
+     */
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deleteRecommendation(
+            @PathVariable Long id,
+            Authentication authentication) {
+        try {
+            UserEntity expert = (UserEntity) authentication.getPrincipal();
+
+            ExpertRecommendation recommendation = recommendationRepository.findById(id)
+                    .orElseThrow(() -> new RuntimeException("Ödev bulunamadı."));
+
+            if (!recommendation.getExpert().getId().equals(expert.getId())) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body("Bu ödevi silme yetkiniz yok.");
+            }
+
+            recommendationRepository.delete(recommendation);
+            return ResponseEntity.ok("Ödev silindi.");
+
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 }
