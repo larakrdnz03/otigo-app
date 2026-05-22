@@ -14,6 +14,7 @@ import com.otigo.auth_api.repository.UserRepository;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class ExpertParentConnectionService {
@@ -31,9 +32,6 @@ public class ExpertParentConnectionService {
         this.childRepository = childRepository;
     }
 
-    /**
-     * Veli, uzmanın emailini girerek bağlantı isteği gönderir.
-     */
     @Transactional
     public ExpertParentConnection sendRequest(UserEntity parent, String expertEmail) {
 
@@ -48,9 +46,22 @@ public class ExpertParentConnectionService {
             throw new RuntimeException("Kendinize istek gönderemezsiniz.");
         }
 
-        connectionRepository.findByExpertAndParent(expert, parent).ifPresent(c -> {
-            throw new RuntimeException("Bu uzmana zaten bir istek gönderilmiş.");
-        });
+        Optional<ExpertParentConnection> existing = connectionRepository.findByExpertAndParent(expert, parent);
+
+        if (existing.isPresent()) {
+            ExpertParentConnection conn = existing.get();
+
+            if (conn.getStatus() == ConnectionStatus.PENDING) {
+                throw new RuntimeException("Bu uzmana zaten bekleyen bir istek var.");
+            }
+            if (conn.getStatus() == ConnectionStatus.ACCEPTED) {
+                throw new RuntimeException("Bu uzmanla zaten bağlantınız var.");
+            }
+            // REJECTED ise tekrar istek gönderilsin
+            conn.setStatus(ConnectionStatus.PENDING);
+            conn.setUpdatedAt(LocalDateTime.now());
+            return connectionRepository.save(conn);
+        }
 
         ExpertParentConnection connection = new ExpertParentConnection();
         connection.setExpert(expert);
@@ -61,16 +72,10 @@ public class ExpertParentConnectionService {
         return connectionRepository.save(connection);
     }
 
-    /**
-     * Uzman bekleyen istekleri görür.
-     */
     public List<ExpertParentConnection> getPendingRequests(UserEntity expert) {
         return connectionRepository.findByExpertAndStatus(expert, ConnectionStatus.PENDING);
     }
 
-    /**
-     * Uzman isteği kabul eder.
-     */
     @Transactional
     public ExpertParentConnection acceptRequest(UserEntity expert, Long connectionId) {
         ExpertParentConnection connection = connectionRepository.findById(connectionId)
@@ -85,9 +90,6 @@ public class ExpertParentConnectionService {
         return connectionRepository.save(connection);
     }
 
-    /**
-     * Uzman isteği reddeder.
-     */
     @Transactional
     public ExpertParentConnection rejectRequest(UserEntity expert, Long connectionId) {
         ExpertParentConnection connection = connectionRepository.findById(connectionId)
@@ -102,23 +104,14 @@ public class ExpertParentConnectionService {
         return connectionRepository.save(connection);
     }
 
-    /**
-     * Velinin bağlı uzmanlarını getirir.
-     */
     public List<ExpertParentConnection> getMyExperts(UserEntity parent) {
         return connectionRepository.findByParentAndStatus(parent, ConnectionStatus.ACCEPTED);
     }
 
-    /**
-     * Uzmanın bağlı velilerini ve çocuklarını getirir.
-     */
     public List<ExpertParentConnection> getMyParents(UserEntity expert) {
         return connectionRepository.findByExpertAndStatus(expert, ConnectionStatus.ACCEPTED);
     }
 
-    /**
-     * Uzmanın takip ettiği çocukları getirir.
-     */
     public List<Child> getMyChildren(UserEntity expert) {
         List<ExpertParentConnection> connections = connectionRepository
                 .findByExpertAndStatus(expert, ConnectionStatus.ACCEPTED);
