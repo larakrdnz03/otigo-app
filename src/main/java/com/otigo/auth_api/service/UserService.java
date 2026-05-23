@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.otigo.auth_api.entity.Child;
 import com.otigo.auth_api.entity.UserEntity;
 import com.otigo.auth_api.entity.enums.AccountStatus;
+import com.otigo.auth_api.entity.enums.UserRole;
 import com.otigo.auth_api.repository.ActivityRepository;
 import com.otigo.auth_api.repository.ActivityResultRepository;
 import com.otigo.auth_api.repository.ChildRepository;
@@ -17,8 +18,6 @@ import com.otigo.auth_api.repository.FcmTokenRepository;
 import com.otigo.auth_api.repository.MessageRepository;
 import com.otigo.auth_api.repository.SymptomSurveyRepository;
 import com.otigo.auth_api.repository.UserRepository;
-import com.otigo.auth_api.token.PasswordResetTokenRepository;
-import com.otigo.auth_api.token.VerificationTokenRepository;
 import com.otigo.auth_api.token.PasswordResetTokenRepository;
 import com.otigo.auth_api.token.VerificationTokenRepository;
 
@@ -78,52 +77,32 @@ public class UserService {
         UserEntity user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("Kullanıcı bulunamadı: " + email));
 
-        // 1. FCM token sil
         fcmTokenRepository.findByUser(user).ifPresent(fcmTokenRepository::delete);
-
-        // 2. Verification token sil
         verificationTokenRepository.findByUser(user).ifPresent(verificationTokenRepository::delete);
-
-        // 3. Password reset token sil
         passwordResetTokenRepository.findByUser(user).ifPresent(passwordResetTokenRepository::delete);
 
-        // 4. Mesajları sil (gönderdiği ve aldığı)
-        messageRepository.findChatHistory(user.getId(), user.getId()).forEach(messageRepository::delete);
+        messageRepository.findBySenderIdOrReceiverId(user.getId(), user.getId())
+                .forEach(messageRepository::delete);
 
-        // 5. Veli-uzman bağlantılarını sil
         expertParentConnectionRepository.findByParent(user).forEach(expertParentConnectionRepository::delete);
         expertParentConnectionRepository.findByExpert(user).forEach(expertParentConnectionRepository::delete);
 
-        // 6. Çocuklara ait verileri sil
         List<Child> children = childRepository.findByParent(user);
         for (Child child : children) {
-            // Anketleri sil
             symptomSurveyRepository.findByChildOrderBySurveyDateDesc(child)
                     .forEach(symptomSurveyRepository::delete);
-
-            // Ödevleri sil
-            expertRecommendationRepository.findByChildAndIsCompletedFalse(child)
-                    .forEach(expertRecommendationRepository::delete);
             expertRecommendationRepository.findByChildOrderByCreatedAtDesc(child)
                     .forEach(expertRecommendationRepository::delete);
-
-            // Oyun sonuçlarını sil
             activityResultRepository.findByChildOrderByPlayedAtDesc(child)
                     .forEach(activityResultRepository::delete);
-
-            // Aktiviteleri sil
             activityRepository.findByChildId(child.getId())
                     .forEach(activityRepository::delete);
-
-            // Çocuğu sil
             childRepository.delete(child);
         }
 
-        // 7. Kullanıcının doldurduğu anketleri sil
         symptomSurveyRepository.findByParentOrderBySurveyDateDesc(user)
                 .forEach(symptomSurveyRepository::delete);
 
-        // 8. Kullanıcıyı sil
         userRepository.delete(user);
     }
 
@@ -136,6 +115,18 @@ public class UserService {
         }
 
         user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+    }
+
+    @Transactional
+    public void updateProfile(UserEntity user, String phoneNumber, String address) {
+        if (phoneNumber != null) user.setPhoneNumber(phoneNumber);
+
+        // Adres sadece uzman için
+        if (address != null && user.getRole() == UserRole.UZMAN) {
+            user.setAddress(address);
+        }
+
         userRepository.save(user);
     }
 }

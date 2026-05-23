@@ -30,9 +30,9 @@ public class UserEntity implements UserDetails {
     private UserRole role;
     @Enumerated(EnumType.STRING)
     private AccountStatus status;
-
-    // Veli modu şifresi (CSV format: "1,2,3,6,9")
     private String parentPattern;
+    private String phoneNumber;
+    private String address;
 
     @OneToMany(mappedBy = "sender", fetch = FetchType.LAZY)
     private List<Message> sentMessages = new ArrayList<>();
@@ -69,6 +69,12 @@ public class UserEntity implements UserDetails {
     public String getParentPattern() { return parentPattern; }
     public void setParentPattern(String parentPattern) { this.parentPattern = parentPattern; }
 
+    public String getPhoneNumber() { return phoneNumber; }
+    public void setPhoneNumber(String phoneNumber) { this.phoneNumber = phoneNumber; }
+
+    public String getAddress() { return address; }
+    public void setAddress(String address) { this.address = address; }
+
     public List<Message> getSentMessages() { return sentMessages; }
     public void setSentMessages(List<Message> sentMessages) { this.sentMessages = sentMessages; }
 
@@ -80,7 +86,7 @@ public class UserEntity implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of(new SimpleGrantedAuthority(role == null ? "VELI" : role.name()));
+        return List.of(new SimpleGrantedAuthority(role == null ? "PARENT" : role.name()));
     }
 
     @Override

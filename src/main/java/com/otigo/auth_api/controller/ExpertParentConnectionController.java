@@ -8,6 +8,7 @@ import com.otigo.auth_api.dto.response.ConnectionResponseDto;
 import com.otigo.auth_api.entity.Child;
 import com.otigo.auth_api.entity.ExpertParentConnection;
 import com.otigo.auth_api.entity.UserEntity;
+import com.otigo.auth_api.repository.UserRepository;
 import com.otigo.auth_api.service.ExpertParentConnectionService;
 
 import java.util.List;
@@ -19,9 +20,12 @@ import java.util.stream.Collectors;
 public class ExpertParentConnectionController {
 
     private final ExpertParentConnectionService connectionService;
+    private final UserRepository userRepository;
 
-    public ExpertParentConnectionController(ExpertParentConnectionService connectionService) {
+    public ExpertParentConnectionController(ExpertParentConnectionService connectionService,
+                                            UserRepository userRepository) {
         this.connectionService = connectionService;
+        this.userRepository = userRepository;
     }
 
     @PostMapping("/request")
@@ -92,5 +96,30 @@ public class ExpertParentConnectionController {
     public ResponseEntity<List<Child>> getMyChildren(Authentication authentication) {
         UserEntity expert = (UserEntity) authentication.getPrincipal();
         return ResponseEntity.ok(connectionService.getMyChildren(expert));
+    }
+
+    /**
+     * Uzmanın detay bilgilerini getirir (veli panelinde uzmana tıklayınca).
+     * GET /api/connections/expert/{expertId}
+     */
+    @GetMapping("/expert/{expertId}")
+    public ResponseEntity<?> getExpertDetail(
+            @PathVariable Long expertId,
+            Authentication authentication) {
+        try {
+            UserEntity expert = userRepository.findById(expertId)
+                    .orElseThrow(() -> new RuntimeException("Uzman bulunamadı."));
+
+            return ResponseEntity.ok(Map.of(
+                    "id", expert.getId(),
+                    "firstname", expert.getFirstname() != null ? expert.getFirstname() : "",
+                    "lastname", expert.getLastname() != null ? expert.getLastname() : "",
+                    "email", expert.getEmail(),
+                    "phoneNumber", expert.getPhoneNumber() != null ? expert.getPhoneNumber() : "",
+                    "address", expert.getAddress() != null ? expert.getAddress() : ""
+            ));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 }
