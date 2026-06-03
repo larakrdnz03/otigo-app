@@ -1,158 +1,105 @@
 package com.otigo.auth_api.controller;
 
-import jakarta.validation.Valid;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.core.Authentication; 
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
-//import com.otigo.auth_api.dto.request.CreateObservationRequest;
-import com.otigo.auth_api.dto.request.CreateRecommendationRequest;
-import com.otigo.auth_api.dto.response.ReportResponse;
-import com.otigo.auth_api.entity.Child;
-import com.otigo.auth_api.entity.ExpertRecommendation;
-//import com.otigo.auth_api.entity.Observation;
 import com.otigo.auth_api.entity.UserEntity;
+import com.otigo.auth_api.entity.enums.UserRole;
 import com.otigo.auth_api.repository.UserRepository;
-import com.otigo.auth_api.service.ExpertService;
-import com.otigo.auth_api.service.ReportService;
 
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/api/v1/expert")
+@RequestMapping("/api/v1/experts")
 public class ExpertController {
 
-    private final ExpertService expertService;
     private final UserRepository userRepository;
-    
-    // --- YENİ EKLENDİ ---
-    private final ReportService reportService; // Rapor Servisini enjekte et
 
-    // --- CONSTRUCTOR GÜNCELLENDİ ---
-    public ExpertController(ExpertService expertService, 
-                            UserRepository userRepository,
-                            ReportService reportService) { // YENİ PARAMETRE
-        this.expertService = expertService;
+    public ExpertController(UserRepository userRepository) {
         this.userRepository = userRepository;
-        this.reportService = reportService; // YENİ ATAMA
     }
 
-    // ... (getTrackedChildren, trackChild, addObservation, getObservationsForChild metotları) ...
-    // ... (Bu metotlarda bir değişiklik yok, oldukları gibi kalıyorlar) ...
-    
-    @GetMapping("/children")
-    public ResponseEntity<Set<Child>> getMyTrackedChildren(Authentication authentication) {
-        UserEntity expertUser = (UserEntity) authentication.getPrincipal();
-        UserEntity freshExpert = userRepository.findById(expertUser.getId()).get();
-        Set<Child> children = expertService.getTrackedChildren(freshExpert);
-        return ResponseEntity.ok(children);
-    }
-
-    @PostMapping("/track/{childId}")
-    public ResponseEntity<String> trackChild(
-            Authentication authentication,
-            @PathVariable Long childId) {
-        try {
-            UserEntity expertUser = (UserEntity) authentication.getPrincipal();
-            expertService.trackChild(expertUser, childId);
-            return ResponseEntity.ok("Çocuk başarıyla takip listesine eklendi.");
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
-    }
-
-    /*@PostMapping("/observations/{childId}")
-    public ResponseEntity<?> addObservation(
-            Authentication authentication,
-            @PathVariable Long childId,
-            @Valid @RequestBody CreateObservationRequest request) {
-        try {
-            UserEntity expertUser = (UserEntity) authentication.getPrincipal();
-            Observation newObservation = (Observation) expertService.addObservation(expertUser, childId, request);
-            return ResponseEntity.status(HttpStatus.CREATED).body(newObservation);
-        } catch (AccessDeniedException e) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
-    }*/
-
-   /* @GetMapping("/observations/{childId}")
-    public ResponseEntity<?> getObservationsForChild(
-            Authentication authentication,
-            @PathVariable Long childId) {
-        try {
-            List<com.otigo.auth_api.entity.Observation> observations = expertService.getObservationsForChild(childId);
-            return ResponseEntity.ok(observations);
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
-    }*/
-
-    @PostMapping("/recommendations/{childId}")
-    public ResponseEntity<?> addRecommendation(
-            Authentication authentication,
-            @PathVariable Long childId,
-            @Valid @RequestBody CreateRecommendationRequest request) {
-        try {
-            UserEntity expertUser = (UserEntity) authentication.getPrincipal();
-            ExpertRecommendation newRecommendation = expertService.addRecommendation(expertUser, childId, request);
-            return ResponseEntity.status(HttpStatus.CREATED).body(newRecommendation);
-        } catch (AccessDeniedException e) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
-    }
-
-    @GetMapping("/recommendations/{childId}")
-    public ResponseEntity<?> getRecommendationsForChild(
-            Authentication authentication,
-            @PathVariable Long childId) {
-        try {
-            List<ExpertRecommendation> recommendations = expertService.getRecommendationsForChild(childId);
-            return ResponseEntity.ok(recommendations);
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
-    }
-
-
-    // --- YENİ EKLENEN ENDPOINT: TAM GELİŞİM RAPORU ---
     /**
-     * Bir çocuk için "tam ve analiz edilmiş" gelişim raporunu getirir.
-     * Bu, mobil uygulamanın tüm grafikleri ve listeleri çizmek için
-     * çağıracağı ana endpoint'tir.
-     * GET /api/v1/expert/report/{childId}
-     *
-     * @param childId Raporu istenen çocuğun ID'si
+     * Uzman ara (isim veya email ile).
+     * GET /api/v1/experts/search?q=...
      */
-    @GetMapping("/report/{childId}")
-    public ResponseEntity<?> getComprehensiveReportForChild(
-            @PathVariable Long childId,
-            Authentication authentication) { // İsteğin güvenli olduğunu garanti eder
+    @GetMapping("/search")
+    public ResponseEntity<?> searchExperts(@RequestParam String q) {
+        List<UserEntity> experts = userRepository.findAll().stream()
+                .filter(u -> u.getRole() == UserRole.UZMAN)
+                .filter(u -> {
+                    String query = q.toLowerCase();
+                    String fullName = ((u.getFirstname() != null ? u.getFirstname() : "") + " " +
+                                      (u.getLastname() != null ? u.getLastname() : "")).toLowerCase();
+                    String email = u.getEmail().toLowerCase();
+                    return fullName.contains(query) || email.contains(query);
+                })
+                .collect(Collectors.toList());
 
-        // TODO: Ekstra Güvenlik Kontrolü: 
-        // Giriş yapmış olan kullanıcının (authentication.getPrincipal()) 
-        // bu 'childId'ye erişim yetkisi var mı? (O çocuğun velisi mi veya uzmanı mı?)
-        
+        List<Map<String, Object>> result = experts.stream().map(e -> Map.<String, Object>of(
+                "id", e.getId(),
+                "firstname", e.getFirstname() != null ? e.getFirstname() : "",
+                "lastname", e.getLastname() != null ? e.getLastname() : "",
+                "email", e.getEmail(),
+                "phoneNumber", e.getPhoneNumber() != null ? e.getPhoneNumber() : "",
+                "address", e.getAddress() != null ? e.getAddress() : ""
+        )).collect(Collectors.toList());
+
+        return ResponseEntity.ok(result);
+    }
+
+    /**
+     * Uzman profil detayı.
+     * GET /api/v1/experts/{id}
+     */
+    @GetMapping("/{id}")
+    public ResponseEntity<?> getExpertById(@PathVariable Long id) {
         try {
-            // 1. "Aşçı" (ReportService) çağır ve "pişmiş keki" (ReportResponse) al
-            ReportResponse reportData = reportService.generateReport(childId);
-            
-            // 2. Analiz edilmiş tam raporu (JSON) mobil uygulamaya dön
-            return ResponseEntity.ok(reportData);
-            
+            UserEntity expert = userRepository.findById(id)
+                    .orElseThrow(() -> new RuntimeException("Uzman bulunamadı."));
+
+            if (expert.getRole() != UserRole.UZMAN) {
+                return ResponseEntity.badRequest().body("Bu kullanıcı bir uzman değil.");
+            }
+
+            return ResponseEntity.ok(Map.of(
+                    "id", expert.getId(),
+                    "firstname", expert.getFirstname() != null ? expert.getFirstname() : "",
+                    "lastname", expert.getLastname() != null ? expert.getLastname() : "",
+                    "email", expert.getEmail(),
+                    "phoneNumber", expert.getPhoneNumber() != null ? expert.getPhoneNumber() : "",
+                    "address", expert.getAddress() != null ? expert.getAddress() : ""
+            ));
         } catch (RuntimeException e) {
-            // "Çocuk bulunamadı" hatasını yakala
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    /**
+     * Email ile uzman bul.
+     * GET /api/v1/experts/by-email?email=...
+     */
+    @GetMapping("/by-email")
+    public ResponseEntity<?> getExpertByEmail(@RequestParam String email) {
+        try {
+            UserEntity expert = userRepository.findByEmail(email)
+                    .orElseThrow(() -> new RuntimeException("Uzman bulunamadı."));
+
+            if (expert.getRole() != UserRole.UZMAN) {
+                return ResponseEntity.badRequest().body("Bu kullanıcı bir uzman değil.");
+            }
+
+            return ResponseEntity.ok(Map.of(
+                    "id", expert.getId(),
+                    "firstname", expert.getFirstname() != null ? expert.getFirstname() : "",
+                    "lastname", expert.getLastname() != null ? expert.getLastname() : "",
+                    "email", expert.getEmail(),
+                    "phoneNumber", expert.getPhoneNumber() != null ? expert.getPhoneNumber() : "",
+                    "address", expert.getAddress() != null ? expert.getAddress() : ""
+            ));
+        } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
