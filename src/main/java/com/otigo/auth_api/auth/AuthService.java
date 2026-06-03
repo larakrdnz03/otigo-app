@@ -252,7 +252,7 @@ public class AuthService {
 
     private void sendPasswordResetEmail(UserEntity user, String token) {
         try {
-            String deepLink = "otigo://reset-password?token=" + token;
+            String deepLink = "https://otigo-app.onrender.com/reset-password?token=" + token;
 
             String htmlContent = "<p>Merhaba " + user.getFirstname() + ",</p>" +
                     "<p>Şifre sıfırlama talebinde bulundunuz.</p>" +
