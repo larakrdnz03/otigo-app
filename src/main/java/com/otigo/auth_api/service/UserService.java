@@ -119,6 +119,12 @@ public class UserService {
     }
 
     @Transactional
+    public void updateProfilePhoto(UserEntity user, String photoBase64) {
+        user.setProfilePhoto(photoBase64);
+        userRepository.save(user);
+    }
+
+    @Transactional
     public void updateProfile(UserEntity user, String phoneNumber, String address) {
         if (phoneNumber != null) user.setPhoneNumber(phoneNumber);
 

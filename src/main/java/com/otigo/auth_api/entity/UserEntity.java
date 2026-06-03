@@ -34,6 +34,9 @@ public class UserEntity implements UserDetails {
     private String phoneNumber;
     private String address;
 
+    @Column(columnDefinition = "TEXT")
+    private String profilePhoto;
+
     @OneToMany(mappedBy = "sender", fetch = FetchType.LAZY)
     private List<Message> sentMessages = new ArrayList<>();
 
@@ -74,6 +77,9 @@ public class UserEntity implements UserDetails {
 
     public String getAddress() { return address; }
     public void setAddress(String address) { this.address = address; }
+
+    public String getProfilePhoto() { return profilePhoto; }
+    public void setProfilePhoto(String profilePhoto) { this.profilePhoto = profilePhoto; }
 
     public List<Message> getSentMessages() { return sentMessages; }
     public void setSentMessages(List<Message> sentMessages) { this.sentMessages = sentMessages; }

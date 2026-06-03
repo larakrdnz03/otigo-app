@@ -58,9 +58,8 @@ public class UserController {
     }
 
     /**
-     * Profil güncelle.
+     * Profil güncelle (telefon, adres).
      * PUT /api/v1/user/profile
-     * Body: { "phoneNumber": "...", "address": "..." } (address sadece uzman için)
      */
     @PutMapping("/profile")
     public ResponseEntity<?> updateProfile(
@@ -70,6 +69,43 @@ public class UserController {
             UserEntity user = (UserEntity) authentication.getPrincipal();
             userService.updateProfile(user, body.get("phoneNumber"), body.get("address"));
             return ResponseEntity.ok("Profil güncellendi.");
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    /**
+     * Mevcut kullanıcı bilgilerini getir.
+     * GET /api/v1/user/me
+     */
+    @GetMapping("/me")
+    public ResponseEntity<?> getMe(Authentication authentication) {
+        UserEntity user = (UserEntity) authentication.getPrincipal();
+        return ResponseEntity.ok(Map.of(
+                "id", user.getId(),
+                "firstname", user.getFirstname() != null ? user.getFirstname() : "",
+                "lastname", user.getLastname() != null ? user.getLastname() : "",
+                "email", user.getEmail(),
+                "role", user.getRole() != null ? user.getRole().name() : "",
+                "phoneNumber", user.getPhoneNumber() != null ? user.getPhoneNumber() : "",
+                "address", user.getAddress() != null ? user.getAddress() : "",
+                "profilePhoto", user.getProfilePhoto() != null ? user.getProfilePhoto() : ""
+        ));
+    }
+
+    /**
+     * Profil fotoğrafı yükle (Base64).
+     * POST /api/v1/user/profile-photo
+     * Body: { "photo": "base64_string" }
+     */
+    @PostMapping("/profile-photo")
+    public ResponseEntity<?> uploadProfilePhoto(
+            @RequestBody Map<String, String> body,
+            Authentication authentication) {
+        try {
+            UserEntity user = (UserEntity) authentication.getPrincipal();
+            userService.updateProfilePhoto(user, body.get("photo"));
+            return ResponseEntity.ok("Profil fotoğrafı güncellendi.");
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }

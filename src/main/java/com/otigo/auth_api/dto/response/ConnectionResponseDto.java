@@ -10,9 +10,11 @@ public class ConnectionResponseDto {
     private Long expertId;
     private String expertEmail;
     private String expertName;
+    private String expertPhotoUrl;
     private Long parentId;
     private String parentEmail;
     private String parentName;
+    private String parentPhotoUrl;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -25,9 +27,11 @@ public class ConnectionResponseDto {
         dto.setExpertId(connection.getExpert().getId());
         dto.setExpertEmail(connection.getExpert().getEmail());
         dto.setExpertName(connection.getExpert().getFirstname() + " " + connection.getExpert().getLastname());
+        dto.setExpertPhotoUrl(connection.getExpert().getProfilePhoto() != null ? connection.getExpert().getProfilePhoto() : "");
         dto.setParentId(connection.getParent().getId());
         dto.setParentEmail(connection.getParent().getEmail());
         dto.setParentName(connection.getParent().getFirstname() + " " + connection.getParent().getLastname());
+        dto.setParentPhotoUrl(connection.getParent().getProfilePhoto() != null ? connection.getParent().getProfilePhoto() : "");
         dto.setCreatedAt(connection.getCreatedAt());
         dto.setUpdatedAt(connection.getUpdatedAt());
         return dto;
@@ -48,6 +52,9 @@ public class ConnectionResponseDto {
     public String getExpertName() { return expertName; }
     public void setExpertName(String expertName) { this.expertName = expertName; }
 
+    public String getExpertPhotoUrl() { return expertPhotoUrl; }
+    public void setExpertPhotoUrl(String expertPhotoUrl) { this.expertPhotoUrl = expertPhotoUrl; }
+
     public Long getParentId() { return parentId; }
     public void setParentId(Long parentId) { this.parentId = parentId; }
 
@@ -56,6 +63,9 @@ public class ConnectionResponseDto {
 
     public String getParentName() { return parentName; }
     public void setParentName(String parentName) { this.parentName = parentName; }
+
+    public String getParentPhotoUrl() { return parentPhotoUrl; }
+    public void setParentPhotoUrl(String parentPhotoUrl) { this.parentPhotoUrl = parentPhotoUrl; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
