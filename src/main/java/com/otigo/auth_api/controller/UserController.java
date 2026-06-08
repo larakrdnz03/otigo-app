@@ -75,12 +75,12 @@ public class UserController {
     }
 
     /**
-     * Mevcut kullanıcı bilgilerini getir.
+     * Mevcut kullanıcı bilgilerini getir (DB'den taze).
      * GET /api/v1/user/me
      */
     @GetMapping("/me")
     public ResponseEntity<?> getMe(Authentication authentication) {
-        UserEntity user = (UserEntity) authentication.getPrincipal();
+        UserEntity user = userService.findByEmail(authentication.getName());
         return ResponseEntity.ok(Map.of(
                 "id", user.getId(),
                 "firstname", user.getFirstname() != null ? user.getFirstname() : "",
@@ -91,6 +91,34 @@ public class UserController {
                 "address", user.getAddress() != null ? user.getAddress() : "",
                 "profilePhoto", user.getProfilePhoto() != null ? user.getProfilePhoto() : ""
         ));
+    }
+
+    /**
+     * Kendi profil fotoğrafını getir.
+     * GET /api/v1/user/me/profile-photo
+     */
+    @GetMapping("/me/profile-photo")
+    public ResponseEntity<?> getMyProfilePhoto(Authentication authentication) {
+        UserEntity user = userService.findByEmail(authentication.getName());
+        String photo = user.getProfilePhoto() != null ? user.getProfilePhoto() : "";
+        return ResponseEntity.ok(Map.of("profilePhoto", photo));
+    }
+
+    /**
+     * Başka kullanıcının profil fotoğrafını getir.
+     * GET /api/v1/user/{userId}/profile-photo
+     */
+    @GetMapping("/{userId}/profile-photo")
+    public ResponseEntity<?> getUserProfilePhoto(
+            @PathVariable Long userId,
+            Authentication authentication) {
+        try {
+            UserEntity photo = userService.findById(userId);
+            String photoData = photo.getProfilePhoto() != null ? photo.getProfilePhoto() : "";
+            return ResponseEntity.ok(Map.of("profilePhoto", photoData));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 
     /**
