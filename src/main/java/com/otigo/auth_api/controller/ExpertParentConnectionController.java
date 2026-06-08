@@ -122,4 +122,36 @@ public class ExpertParentConnectionController {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
+
+    /**
+     * Veli profil detayı (uzman için).
+     * GET /api/connections/parent/{parentId}
+     */
+    @GetMapping("/parent/{parentId}")
+    public ResponseEntity<?> getParentDetail(
+            @PathVariable Long parentId,
+            Authentication authentication) {
+        try {
+            UserEntity expert = (UserEntity) authentication.getPrincipal();
+            UserEntity parent = userRepository.findById(parentId)
+                    .orElseThrow(() -> new RuntimeException("Veli bulunamadı."));
+
+            boolean isConnected = connectionService.getMyParents(expert).stream()
+                    .anyMatch(c -> c.getParent().getId().equals(parentId));
+
+            if (!isConnected) {
+                return ResponseEntity.status(403).body("Bu velinin profiline erişim yetkiniz yok.");
+            }
+
+            return ResponseEntity.ok(Map.of(
+                    "id", parent.getId(),
+                    "firstname", parent.getFirstname() != null ? parent.getFirstname() : "",
+                    "lastname", parent.getLastname() != null ? parent.getLastname() : "",
+                    "email", parent.getEmail(),
+                    "phoneNumber", parent.getPhoneNumber() != null ? parent.getPhoneNumber() : ""
+            ));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
 }

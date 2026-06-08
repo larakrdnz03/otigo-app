@@ -15,6 +15,7 @@ public class ConnectionResponseDto {
     private String parentEmail;
     private String parentName;
     private String parentPhotoUrl;
+    private String parentPhone;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -32,6 +33,7 @@ public class ConnectionResponseDto {
         dto.setParentEmail(connection.getParent().getEmail());
         dto.setParentName(connection.getParent().getFirstname() + " " + connection.getParent().getLastname());
         dto.setParentPhotoUrl(connection.getParent().getProfilePhoto() != null ? connection.getParent().getProfilePhoto() : "");
+        dto.setParentPhone(connection.getParent().getPhoneNumber() != null ? connection.getParent().getPhoneNumber() : "");
         dto.setCreatedAt(connection.getCreatedAt());
         dto.setUpdatedAt(connection.getUpdatedAt());
         return dto;
@@ -66,6 +68,9 @@ public class ConnectionResponseDto {
 
     public String getParentPhotoUrl() { return parentPhotoUrl; }
     public void setParentPhotoUrl(String parentPhotoUrl) { this.parentPhotoUrl = parentPhotoUrl; }
+
+    public String getParentPhone() { return parentPhone; }
+    public void setParentPhone(String parentPhone) { this.parentPhone = parentPhone; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
