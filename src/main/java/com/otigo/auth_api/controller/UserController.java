@@ -98,7 +98,7 @@ public class UserController {
      * POST /api/v1/user/profile-photo
      * Body: { "photo": "base64_string" }
      */
-    @PostMapping("/profile-photo")
+    @PostMapping({"/profile-photo", "/me/profile-photo"})
     public ResponseEntity<?> uploadProfilePhoto(
             @RequestBody Map<String, String> body,
             Authentication authentication) {
@@ -110,4 +110,5 @@ public class UserController {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
+
 }
