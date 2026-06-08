@@ -94,21 +94,38 @@ public class UserController {
     }
 
     /**
-     * Profil fotoğrafı yükle (Base64).
+     * Profil fotoğrafı yükle (Base64 JSON veya multipart).
      * POST /api/v1/user/profile-photo
-     * Body: { "photo": "base64_string" }
+     * POST /api/v1/user/me/profile-photo
      */
     @PostMapping({"/profile-photo", "/me/profile-photo"})
     public ResponseEntity<?> uploadProfilePhoto(
-            @RequestBody Map<String, String> body,
+            @RequestBody(required = false) Map<String, String> body,
+            @RequestParam(value = "photo", required = false) String photoParam,
+            @RequestParam(value = "file", required = false) String fileParam,
             Authentication authentication) {
         try {
             UserEntity user = (UserEntity) authentication.getPrincipal();
-            userService.updateProfilePhoto(user, body.get("photo"));
-            return ResponseEntity.ok("Profil fotoğrafı güncellendi.");
+
+            String photo = null;
+            if (body != null && body.get("photo") != null) {
+                photo = body.get("photo");
+            } else if (body != null && body.get("profilePhotoBase64") != null) {
+                photo = body.get("profilePhotoBase64");
+            } else if (photoParam != null) {
+                photo = photoParam;
+            } else if (fileParam != null) {
+                photo = fileParam;
+            }
+
+            if (photo == null) {
+                return ResponseEntity.badRequest().body("Fotoğraf verisi bulunamadı.");
+            }
+
+            userService.updateProfilePhoto(user, photo);
+            return ResponseEntity.ok(Map.of("profilePhoto", photo));
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
-
 }
